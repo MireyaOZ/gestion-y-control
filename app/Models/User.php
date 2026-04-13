@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
+
+#[Fillable(['name', 'email', 'password', 'is_active'])]
+#[Hidden(['password', 'remember_token'])]
+class User extends Authenticatable
+{
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, HasRoles, Notifiable;
+
+    protected string $guard_name = 'web';
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'is_active' => 'boolean',
+            'password' => 'hashed',
+        ];
+    }
+
+    public function createdProjects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'created_by');
+    }
+
+    public function createdTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'created_by');
+    }
+
+    public function createdSubtasks(): HasMany
+    {
+        return $this->hasMany(Subtask::class, 'created_by');
+    }
+
+    public function assignedTasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class)
+            ->withPivot('assigned_at')
+            ->withTimestamps();
+    }
+
+    public function assignedSubtasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Subtask::class)
+            ->withPivot('assigned_at')
+            ->withTimestamps();
+    }
+}

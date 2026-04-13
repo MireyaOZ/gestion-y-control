@@ -1,0 +1,26 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Priority extends Model
+{
+    protected $fillable = ['name', 'slug', 'weight'];
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
+
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany(Subtask::class);
+    }
+}

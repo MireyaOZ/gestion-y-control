@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-slate-950 text-slate-100;
+    }
+}
+
+@layer components {
+    .app-card {
+        @apply rounded-3xl border border-white/10 bg-slate-900/80 shadow-2xl shadow-slate-950/20 backdrop-blur;
+    }
+
+    .app-input {
+        @apply mt-1 w-full rounded-2xl border border-white/10 bg-slate-950/70 text-sm text-slate-100 focus:border-emerald-400 focus:ring-emerald-400;
+    }
+
+    .app-label {
+        @apply text-sm font-medium text-slate-200;
+    }
+
+    .app-button {
+        @apply inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300;
+    }
+
+    .app-button-secondary {
+        @apply inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10;
+    }
+
+    .icon-button {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400 text-xl font-semibold text-slate-950 transition hover:bg-emerald-300;
+    }
+}
+
+trix-toolbar {
+    @apply rounded-t-2xl border border-white/10 border-b-0 bg-slate-900;
+}
+
+trix-toolbar .trix-button-group {
+    @apply rounded-xl border-white/10 bg-slate-950/60;
+}
+
+trix-toolbar .trix-button {
+    @apply border-white/10 bg-slate-950/40 text-slate-200;
+}
+
+trix-toolbar .trix-button:hover,
+trix-toolbar .trix-button:focus {
+    @apply bg-slate-800 text-white;
+}
+
+trix-toolbar .trix-button.trix-active {
+    @apply bg-emerald-400 text-slate-950;
+}
+
+trix-toolbar .trix-button::before {
+    opacity: 0.95;
+    filter: invert(92%) sepia(8%) saturate(260%) hue-rotate(182deg) brightness(102%) contrast(92%);
+}
+
+trix-toolbar .trix-button.trix-active::before {
+    filter: invert(11%) sepia(19%) saturate(714%) hue-rotate(178deg) brightness(92%) contrast(93%);
+}
+
+trix-toolbar .trix-dialog {
+    @apply rounded-2xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl;
+}
+
+trix-toolbar .trix-dialog__link-fields {
+    @apply gap-3;
+}
+
+trix-toolbar .trix-dialog__link-fields .trix-input {
+    @apply rounded-xl border border-white/10 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400;
+}
+
+trix-toolbar .trix-dialog__link-fields .trix-button {
+    @apply rounded-xl;
+}
+
+.trix-content {
+    @apply min-h-40 rounded-b-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100;
+}
+
+trix-editor {
+    @apply min-h-40;
+}
+
+trix-editor:focus {
+    @apply border-emerald-400 ring-1 ring-emerald-400;
+}
+
+trix-editor [data-trix-mutable="true"] {
+    color: inherit;
+}
+
+.trix-content a,
+.prose.prose-invert a {
+    @apply text-emerald-300;
+}
+
+.trix-content blockquote,
+.prose.prose-invert blockquote {
+    @apply border-emerald-400/40 text-slate-300;
+}
+
+.trix-content pre,
+.prose.prose-invert pre {
+    @apply rounded-2xl border border-white/10 bg-slate-950 text-slate-100;
+}
+
+.trix-content code,
+.prose.prose-invert code {
+    @apply text-emerald-200;
+}
+
+.trix-content strong,
+.prose.prose-invert strong {
+    @apply text-white;
+}
