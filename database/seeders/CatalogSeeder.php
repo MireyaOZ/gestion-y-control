@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\EmailMovementType;
 use App\Models\Priority;
 use App\Models\ProjectStatus;
+use App\Models\SystemStatus;
 use App\Models\TaskStatus;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -46,6 +48,30 @@ class CatalogSeeder extends Seeder
             Priority::query()->updateOrCreate(
                 ['slug' => Str::slug($priority['name'])],
                 $priority,
+            );
+        }
+
+        foreach ([
+            'Alta',
+            'Baja',
+            'Cambio de contraseña',
+        ] as $movementType) {
+            EmailMovementType::query()->updateOrCreate(
+                ['slug' => Str::slug($movementType)],
+                ['name' => $movementType],
+            );
+        }
+
+        foreach ([
+            'En proceso de reunion',
+            'En proceso de diagramacion',
+            'Proceso de validacion',
+            'Visto bueno del diagrama',
+            'En pruebas',
+        ] as $status) {
+            SystemStatus::query()->updateOrCreate(
+                ['slug' => Str::slug($status)],
+                ['name' => $status],
             );
         }
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Project;
 use App\Models\Subtask;
+use App\Models\SystemRecord;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -16,6 +17,7 @@ trait ResolvesManagedModels
             'project' => Project::query()->findOrFail($id),
             'task' => Task::query()->findOrFail($id),
             'subtask' => Subtask::query()->findOrFail($id),
+            'system' => SystemRecord::query()->findOrFail($id),
             default => abort(404),
         };
     }

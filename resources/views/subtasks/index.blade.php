@@ -6,7 +6,7 @@
                 <p class="text-sm text-slate-400">Seguimiento fino por tarea padre y responsables.</p>
             </div>
             @can('subtasks.create')
-                <a href="{{ route('subtasks.create') }}" class="app-button">Nueva subtarea</a>
+                <a href="{{ route('subtasks.create') }}" class="app-button-light">Nueva subtarea</a>
             @endcan
         </div>
     </x-slot>

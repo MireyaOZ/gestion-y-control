@@ -6,7 +6,9 @@ use App\Models\Attachment;
 use App\Models\ChangeLog;
 use App\Models\Comment;
 use App\Models\Project;
+use App\Models\EmailRequest;
 use App\Models\ResourceLink;
+use App\Models\SystemRecord;
 use App\Models\Subtask;
 use App\Models\Task;
 use App\Models\User;
@@ -34,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Relation::enforceMorphMap([
             'user' => User::class,
+            'email_request' => EmailRequest::class,
+            'system' => SystemRecord::class,
             'project' => Project::class,
             'task' => Task::class,
             'subtask' => Subtask::class,

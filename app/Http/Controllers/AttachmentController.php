@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ResolvesManagedModels;
 use App\Models\Attachment;
 use App\Models\Project;
 use App\Models\Subtask;
+use App\Models\SystemRecord;
 use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,12 +50,14 @@ class AttachmentController extends Controller
         return back()->with('status', 'Adjunto eliminado.');
     }
 
-    protected function authorizeAction(Project|Task|Subtask $model): void
+    protected function authorizeAction(Project|Task|Subtask|SystemRecord $model): void
     {
         if ($model instanceof Project) {
             $this->authorize('update', $model);
         } elseif ($model instanceof Task) {
             $this->authorize('update', $model);
+        } elseif ($model instanceof SystemRecord) {
+            abort_unless(request()->user()?->can('systems.update'), 403);
         } else {
             $this->authorize('update', $model);
         }

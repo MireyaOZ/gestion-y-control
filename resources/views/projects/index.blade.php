@@ -6,7 +6,7 @@
                 <p class="text-sm text-slate-400">Vista operativa de proyectos y sus tareas relacionadas.</p>
             </div>
             @can('projects.create')
-                <a href="{{ route('projects.create') }}" class="app-button">Nuevo proyecto</a>
+                <a href="{{ route('projects.create') }}" class="app-button-light">Nuevo proyecto</a>
             @endcan
         </div>
     </x-slot>

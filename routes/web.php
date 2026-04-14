@@ -6,10 +6,12 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailRequestController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SystemRecordController;
 use App\Http\Controllers\SubtaskController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +22,14 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/correos', [EmailRequestController::class, 'index'])->name('emails.index');
+    Route::post('/correos', [EmailRequestController::class, 'store'])->name('emails.store');
+    Route::patch('/correos/{emailRequest}', [EmailRequestController::class, 'update'])->name('emails.update');
+    Route::delete('/correos/{emailRequest}', [EmailRequestController::class, 'destroy'])->name('emails.destroy');
+    Route::get('/sistemas', [SystemRecordController::class, 'index'])->name('systems.index');
+    Route::post('/sistemas', [SystemRecordController::class, 'store'])->name('systems.store');
+    Route::patch('/sistemas/{system}', [SystemRecordController::class, 'update'])->name('systems.update');
+    Route::delete('/sistemas/{system}', [SystemRecordController::class, 'destroy'])->name('systems.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

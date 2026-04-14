@@ -6,7 +6,7 @@
                 <p class="text-sm text-slate-400">Listado de tareas con asignaciones y control de estado.</p>
             </div>
             @can('tasks.create')
-                <a href="{{ route('tasks.create') }}" class="app-button">Nueva tarea</a>
+                <a href="{{ route('tasks.create') }}" class="app-button-light">Nueva tarea</a>
             @endcan
         </div>
     </x-slot>

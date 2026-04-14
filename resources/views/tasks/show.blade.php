@@ -56,7 +56,7 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-white">Subtareas</h3>
                 @can('subtasks.create')
-                    <a href="{{ route('subtasks.create', ['task_id' => $task->id]) }}" class="app-button-secondary">Nueva subtarea</a>
+                    <a href="{{ route('subtasks.create', ['task_id' => $task->id]) }}" class="app-button-light">Nueva subtarea</a>
                 @endcan
             </div>
             <div class="mt-4 space-y-3">

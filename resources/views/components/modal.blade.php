@@ -46,7 +46,7 @@ $maxWidth = [
     x-on:keydown.tab.prevent="$event.shiftKey || nextFocusable().focus()"
     x-on:keydown.shift.tab.prevent="prevFocusable().focus()"
     x-show="show"
-    class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
+    class="fixed inset-0 overflow-y-auto px-4 py-8 sm:px-0 sm:py-12 z-[220]"
     style="display: {{ $show ? 'block' : 'none' }};"
 >
     <div
@@ -60,19 +60,21 @@ $maxWidth = [
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
     >
-        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-[#960018]/18 backdrop-blur-sm"></div>
     </div>
 
-    <div
-        x-show="show"
-        class="mb-6 overflow-hidden rounded-3xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl shadow-slate-950/40 transform transition-all sm:w-full {{ $maxWidth }} sm:mx-auto"
-        x-transition:enter="ease-out duration-300"
-        x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-        x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-        x-transition:leave="ease-in duration-200"
-        x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-        x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-    >
-        {{ $slot }}
+    <div class="flex min-h-full items-start justify-center sm:items-center">
+        <div
+            x-show="show"
+            class="app-modal relative mt-16 mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-900 shadow-2xl shadow-[#960018]/10 transform transition-all sm:mt-0 sm:w-full {{ $maxWidth }} sm:mx-auto"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+            x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+        >
+            {{ $slot }}
+        </div>
     </div>
 </div>

@@ -30,6 +30,14 @@ class RolesAndPermissionsSeeder extends Seeder
         $administrator->syncPermissions(PermissionCatalog::all());
 
         $projectManager->syncPermissions([
+            'emails.view',
+            'emails.create',
+            'emails.update',
+            'emails.delete',
+            'systems.view',
+            'systems.create',
+            'systems.update',
+            'systems.delete',
             'projects.view',
             'projects.create',
             'projects.update',
@@ -46,6 +54,14 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         $taskManager->syncPermissions([
+            'emails.view',
+            'emails.create',
+            'emails.update',
+            'emails.delete',
+            'systems.view',
+            'systems.create',
+            'systems.update',
+            'systems.delete',
             'tasks.view',
             'tasks.create',
             'tasks.update',
@@ -67,6 +83,14 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         $user->syncPermissions([
+            'emails.view',
+            'emails.create',
+            'emails.update',
+            'emails.delete',
+            'systems.view',
+            'systems.create',
+            'systems.update',
+            'systems.delete',
             'tasks.view',
             'tasks.change_status',
             'subtasks.view',
@@ -89,5 +113,7 @@ class RolesAndPermissionsSeeder extends Seeder
         if (! $admin->hasRole('administrador')) {
             $admin->assignRole($administrator);
         }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

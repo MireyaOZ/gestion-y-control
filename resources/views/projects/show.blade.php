@@ -35,7 +35,7 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-white">Tareas relacionadas</h3>
                 @can('tasks.create')
-                    <a href="{{ route('tasks.create') }}" class="app-button-secondary">Nueva tarea</a>
+                    <a href="{{ route('tasks.create') }}" class="app-button-light">Nueva tarea</a>
                 @endcan
             </div>
             <div class="mt-4 space-y-3">
@@ -56,6 +56,6 @@
         </section>
 
         @include('shared.resource-panels', ['model' => $project, 'type' => 'project', 'showComments' => false])
-        @include('shared.change-log-panel', ['items' => $project->changeLogs])
+        @include('shared.change-log-panel', ['items' => $project->changeLogs, 'modalName' => 'project-history-'.$project->id])
     </div>
 </x-app-layout>

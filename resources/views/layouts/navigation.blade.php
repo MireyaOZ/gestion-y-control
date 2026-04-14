@@ -1,11 +1,11 @@
-<nav x-data="{ open: false }" class="relative z-[100] border-b border-white/10 bg-slate-950/60 backdrop-blur">
+<nav x-data="{ open: false }" class="relative z-[100] border-b border-[#7b0014]/10 bg-[#960018] text-white shadow-sm">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
-                        <div class="rounded-2xl bg-emerald-400 px-3 py-2 text-sm font-black uppercase tracking-[0.35em] text-slate-950">
-                            GYT
+                        <div class="rounded-2xl bg-white px-3 py-2 text-sm font-black uppercase tracking-[0.35em] text-[#960018] shadow-sm">
+                            G Y C
                         </div>
                     </a>
                 </div>
@@ -29,6 +29,16 @@
                             Subtareas
                         </x-nav-link>
                     @endcan
+                    @can('emails.view')
+                        <x-nav-link :href="route('emails.index')" :active="request()->routeIs('emails.*')">
+                            Correos
+                        </x-nav-link>
+                    @endcan
+                    @can('systems.view')
+                        <x-nav-link :href="route('systems.index')" :active="request()->routeIs('systems.*')">
+                            Sistemas
+                        </x-nav-link>
+                    @endcan
                     @can('admin.access')
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.*')">
                             Administración
@@ -40,7 +50,7 @@
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium leading-4 text-slate-200 hover:text-white focus:outline-none transition">
+                        <button class="inline-flex items-center rounded-2xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-medium leading-4 text-white hover:bg-white/15 focus:outline-none transition">
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -71,7 +81,7 @@
             </div>
 
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center rounded-2xl p-2 text-slate-400 hover:bg-white/5 hover:text-white focus:outline-none transition">
+                <button @click="open = ! open" class="inline-flex items-center justify-center rounded-2xl p-2 text-white/80 hover:bg-white/10 hover:text-white focus:outline-none transition">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -102,6 +112,16 @@
                     Subtareas
                 </x-responsive-nav-link>
             @endcan
+            @can('emails.view')
+                <x-responsive-nav-link :href="route('emails.index')" :active="request()->routeIs('emails.*')">
+                    Correos
+                </x-responsive-nav-link>
+            @endcan
+            @can('systems.view')
+                <x-responsive-nav-link :href="route('systems.index')" :active="request()->routeIs('systems.*')">
+                    Sistemas
+                </x-responsive-nav-link>
+            @endcan
             @can('admin.access')
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.*')">
                     Administración
@@ -109,10 +129,10 @@
             @endcan
         </div>
 
-        <div class="border-t border-white/10 pt-4 pb-1">
+        <div class="border-t border-white/15 pt-4 pb-1">
             <div class="px-4">
-                <div class="font-medium text-base text-slate-100">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-slate-400">{{ Auth::user()->email }}</div>
+                <div class="font-medium text-base text-white">{{ Auth::user()->name }}</div>
+                <div class="font-medium text-sm text-white/70">{{ Auth::user()->email }}</div>
             </div>
 
             <div class="mt-3 space-y-1">

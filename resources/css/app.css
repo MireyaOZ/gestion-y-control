@@ -4,55 +4,59 @@
 
 @layer base {
     body {
-        @apply bg-slate-950 text-slate-100;
+        @apply bg-white text-slate-900;
     }
 }
 
 @layer components {
     .app-card {
-        @apply rounded-3xl border border-white/10 bg-slate-900/80 shadow-2xl shadow-slate-950/20 backdrop-blur;
+        @apply rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-200/70;
     }
 
     .app-input {
-        @apply mt-1 w-full rounded-2xl border border-white/10 bg-slate-950/70 text-sm text-slate-100 focus:border-emerald-400 focus:ring-emerald-400;
+        @apply mt-1 w-full rounded-2xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#960018] focus:ring-[#960018];
     }
 
     .app-label {
-        @apply text-sm font-medium text-slate-200;
+        @apply text-sm font-medium text-slate-700;
     }
 
     .app-button {
-        @apply inline-flex items-center justify-center rounded-2xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300;
+        @apply inline-flex items-center justify-center rounded-2xl bg-[#960018] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#7c0014];
+    }
+
+    .app-button-light {
+        @apply inline-flex items-center justify-center rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-[#960018] shadow-sm transition hover:bg-slate-100;
     }
 
     .app-button-secondary {
-        @apply inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:bg-white/10;
+        @apply inline-flex items-center justify-center rounded-2xl border border-[#960018]/20 bg-white px-4 py-2 text-sm font-semibold text-[#960018] transition hover:bg-[#960018]/5;
     }
 
     .icon-button {
-        @apply inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400 text-xl font-semibold text-slate-950 transition hover:bg-emerald-300;
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[#960018] text-xl font-semibold text-white transition hover:bg-[#7c0014];
     }
 }
 
 trix-toolbar {
-    @apply rounded-t-2xl border border-white/10 border-b-0 bg-slate-900;
+    @apply rounded-t-2xl border border-slate-300 border-b-0 bg-slate-50;
 }
 
 trix-toolbar .trix-button-group {
-    @apply rounded-xl border-white/10 bg-slate-950/60;
+    @apply rounded-xl border-slate-300 bg-white;
 }
 
 trix-toolbar .trix-button {
-    @apply border-white/10 bg-slate-950/40 text-slate-200;
+    @apply border-slate-300 bg-white text-slate-700;
 }
 
 trix-toolbar .trix-button:hover,
 trix-toolbar .trix-button:focus {
-    @apply bg-slate-800 text-white;
+    @apply bg-slate-100 text-slate-900;
 }
 
 trix-toolbar .trix-button.trix-active {
-    @apply bg-emerald-400 text-slate-950;
+    @apply bg-[#960018] text-white;
 }
 
 trix-toolbar .trix-button::before {
@@ -65,7 +69,7 @@ trix-toolbar .trix-button.trix-active::before {
 }
 
 trix-toolbar .trix-dialog {
-    @apply rounded-2xl border border-white/10 bg-slate-900 text-slate-100 shadow-2xl;
+    @apply rounded-2xl border border-slate-300 bg-white text-slate-900 shadow-xl;
 }
 
 trix-toolbar .trix-dialog__link-fields {
@@ -73,7 +77,7 @@ trix-toolbar .trix-dialog__link-fields {
 }
 
 trix-toolbar .trix-dialog__link-fields .trix-input {
-    @apply rounded-xl border border-white/10 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400;
+    @apply rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-[#960018] focus:ring-[#960018];
 }
 
 trix-toolbar .trix-dialog__link-fields .trix-button {
@@ -81,7 +85,7 @@ trix-toolbar .trix-dialog__link-fields .trix-button {
 }
 
 .trix-content {
-    @apply min-h-40 rounded-b-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-slate-100;
+    @apply min-h-40 rounded-b-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900;
 }
 
 trix-editor {
@@ -89,7 +93,7 @@ trix-editor {
 }
 
 trix-editor:focus {
-    @apply border-emerald-400 ring-1 ring-emerald-400;
+    @apply border-[#960018] ring-1 ring-[#960018];
 }
 
 trix-editor [data-trix-mutable="true"] {
@@ -98,25 +102,101 @@ trix-editor [data-trix-mutable="true"] {
 
 .trix-content a,
 .prose.prose-invert a {
-    @apply text-emerald-300;
+    @apply text-[#960018];
 }
 
 .trix-content blockquote,
 .prose.prose-invert blockquote {
-    @apply border-emerald-400/40 text-slate-300;
+    @apply border-[#960018]/30 text-slate-600;
 }
 
 .trix-content pre,
 .prose.prose-invert pre {
-    @apply rounded-2xl border border-white/10 bg-slate-950 text-slate-100;
+    @apply rounded-2xl border border-slate-300 bg-slate-50 text-slate-900;
 }
 
 .trix-content code,
 .prose.prose-invert code {
-    @apply text-emerald-200;
+    @apply text-[#960018];
 }
 
 .trix-content strong,
 .prose.prose-invert strong {
-    @apply text-white;
+    @apply text-slate-900;
+}
+
+.app-card .text-white {
+    color: rgb(15 23 42);
+}
+
+.app-card .text-slate-100,
+.app-card .text-slate-200,
+.app-card .text-slate-300 {
+    color: rgb(51 65 85);
+}
+
+.app-card .text-slate-400 {
+    color: rgb(100 116 139);
+}
+
+.app-card .text-emerald-300 {
+    color: rgb(150 0 24);
+}
+
+.app-card .bg-white\/5 {
+    background-color: rgb(148 163 184 / 0.08);
+}
+
+.app-card .border-white\/10 {
+    border-color: rgb(148 163 184 / 0.18);
+}
+
+.app-card .hover\:bg-white\/5:hover {
+    background-color: rgb(148 163 184 / 0.1);
+}
+
+.app-card .hover\:border-emerald-400\/40:hover {
+    border-color: rgb(150 0 24 / 0.25);
+}
+
+.app-modal .text-white {
+    color: rgb(15 23 42);
+}
+
+.app-modal .text-slate-100,
+.app-modal .text-slate-200,
+.app-modal .text-slate-300 {
+    color: rgb(51 65 85);
+}
+
+.app-modal .text-slate-400 {
+    color: rgb(100 116 139);
+}
+
+.app-modal .text-emerald-300 {
+    color: rgb(150 0 24);
+}
+
+.app-modal .border-white\/10 {
+    border-color: rgb(148 163 184 / 0.18);
+}
+
+.app-modal .bg-slate-900,
+.app-modal .bg-slate-950,
+.app-modal .bg-slate-950\/60,
+.app-modal .bg-slate-950\/70,
+.app-modal .bg-slate-950\/40,
+.app-modal .bg-white\/5 {
+    background-color: rgb(248 250 252);
+}
+
+.app-modal .hover\:bg-white\/5:hover,
+.app-modal .focus\:bg-white\/5:focus {
+    background-color: rgb(241 245 249);
+}
+
+.app-modal .app-button-secondary {
+    border-color: rgb(150 0 24 / 0.2);
+    color: rgb(150 0 24);
+    background-color: rgb(255 255 255);
 }
