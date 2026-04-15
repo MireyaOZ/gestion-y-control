@@ -78,10 +78,10 @@
                                 <div>{{ $system->status?->name ?? 'Sin estatus' }}</div>
                                 @if ($system->status?->slug === 'en-pruebas')
                                     <div class="mt-2 space-y-1 text-xs text-slate-500">
-                                        <div>Errores pendientes: {{ $system->pending_errors ?? 0 }}</div>
-                                        <div>Errores en proceso de solución: {{ $system->errors_in_progress ?? 0 }}</div>
-                                        <div>En revisión: {{ $system->in_review ?? 0 }}</div>
-                                        <div>Finalizados: {{ $system->finalized ?? 0 }}</div>
+                                        <div>Tarjetas errores pendientes: {{ $system->pending_errors ?? 0 }}</div>
+                                        <div>Tarjetas errores en proceso de solución: {{ $system->errors_in_progress ?? 0 }}</div>
+                                        <div>Tarjetas en revisión: {{ $system->in_review ?? 0 }}</div>
+                                        <div>Tarjetas finalizadas: {{ $system->finalized ?? 0 }}</div>
                                     </div>
                                 @endif
                             </td>
@@ -226,19 +226,19 @@
 
                             <div x-show="statusSlugs[selectedStatusId] === testingSlug" x-transition class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
                                 <div>
-                                    <label for="edit-pending-errors-{{ $system->id }}" class="app-label">Errores pendientes</label>
+                                    <label for="edit-pending-errors-{{ $system->id }}" class="app-label">Tarjetas errores pendientes</label>
                                     <input id="edit-pending-errors-{{ $system->id }}" name="pending_errors" type="number" min="0" step="1" class="app-input" value="{{ old('pending_errors', $system->pending_errors ?? 0) }}">
                                 </div>
                                 <div>
-                                    <label for="edit-errors-in-progress-{{ $system->id }}" class="app-label">Errores en proceso de solución</label>
+                                    <label for="edit-errors-in-progress-{{ $system->id }}" class="app-label">Tarjetas errores en proceso de solución</label>
                                     <input id="edit-errors-in-progress-{{ $system->id }}" name="errors_in_progress" type="number" min="0" step="1" class="app-input" value="{{ old('errors_in_progress', $system->errors_in_progress ?? 0) }}">
                                 </div>
                                 <div>
-                                    <label for="edit-in-review-{{ $system->id }}" class="app-label">En revisión</label>
+                                    <label for="edit-in-review-{{ $system->id }}" class="app-label">Tarjetas en revisión</label>
                                     <input id="edit-in-review-{{ $system->id }}" name="in_review" type="number" min="0" step="1" class="app-input" value="{{ old('in_review', $system->in_review ?? 0) }}">
                                 </div>
                                 <div>
-                                    <label for="edit-finalized-{{ $system->id }}" class="app-label">Finalizados</label>
+                                    <label for="edit-finalized-{{ $system->id }}" class="app-label">Tarjetas finalizadas</label>
                                     <input id="edit-finalized-{{ $system->id }}" name="finalized" type="number" min="0" step="1" class="app-input" value="{{ old('finalized', $system->finalized ?? 0) }}">
                                 </div>
                             </div>
@@ -301,22 +301,22 @@
 
                     <div x-show="statusSlugs[selectedStatusId] === testingSlug" x-transition class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
                         <div>
-                            <label for="pending-errors" class="app-label">Errores pendientes</label>
+                            <label for="pending-errors" class="app-label">Tarjetas errores pendientes</label>
                             <input id="pending-errors" name="pending_errors" type="number" min="0" step="1" class="app-input" value="{{ old('pending_errors', 0) }}">
                         </div>
 
                         <div>
-                            <label for="errors-in-progress" class="app-label">Errores en proceso de solución</label>
+                            <label for="errors-in-progress" class="app-label">Tarjetas errores en proceso de solución</label>
                             <input id="errors-in-progress" name="errors_in_progress" type="number" min="0" step="1" class="app-input" value="{{ old('errors_in_progress', 0) }}">
                         </div>
 
                         <div>
-                            <label for="in-review" class="app-label">En revisión</label>
+                            <label for="in-review" class="app-label">Tarjetas en revisión</label>
                             <input id="in-review" name="in_review" type="number" min="0" step="1" class="app-input" value="{{ old('in_review', 0) }}">
                         </div>
 
                         <div>
-                            <label for="finalized" class="app-label">Finalizados</label>
+                            <label for="finalized" class="app-label">Tarjetas finalizadas</label>
                             <input id="finalized" name="finalized" type="number" min="0" step="1" class="app-input" value="{{ old('finalized', 0) }}">
                         </div>
                     </div>
