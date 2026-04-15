@@ -19,7 +19,6 @@ class Task extends Model
         'due_date',
         'task_status_id',
         'priority_id',
-        'project_id',
         'created_by',
     ];
 
@@ -38,11 +37,6 @@ class Task extends Model
     public function priority(): BelongsTo
     {
         return $this->belongsTo(Priority::class);
-    }
-
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
     }
 
     public function creator(): BelongsTo

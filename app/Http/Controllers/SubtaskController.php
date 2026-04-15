@@ -23,12 +23,11 @@ class SubtaskController extends Controller
         $search = (string) $request->string('search');
 
         $subtasks = Subtask::query()
-            ->with(['status', 'priority', 'task.project', 'creator', 'assignees'])
+            ->with(['status', 'priority', 'task', 'creator', 'assignees'])
             ->when(! $user->can('admin.access'), fn ($query) => $query->where(function ($subQuery) use ($user) {
                 $subQuery->where('created_by', $user->id)
                     ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id))
-                    ->orWhereHas('task', fn ($tasks) => $tasks->where('created_by', $user->id))
-                    ->orWhereHas('task.project', fn ($projects) => $projects->where('created_by', $user->id));
+                    ->orWhereHas('task', fn ($tasks) => $tasks->where('created_by', $user->id));
             }))
             ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->latest()
@@ -70,7 +69,7 @@ class SubtaskController extends Controller
         $subtask->load([
             'status',
             'priority',
-            'task.project',
+            'task',
             'creator',
             'assignees',
             'attachments.uploader',
@@ -123,7 +122,7 @@ class SubtaskController extends Controller
     {
         $this->authorize('delete', $subtask);
 
-        ChangeLogger::log($subtask, 'deleted', "<p>Subtarea eliminada por ".auth()->user()->name.'.</p>');
+        ChangeLogger::log($subtask, 'deleted', "<p>Subtarea eliminada por ".(string) request()->user()?->name.'.</p>');
         $subtask->delete();
 
         return redirect()->route('subtasks.index')->with('status', 'Subtarea eliminada.');

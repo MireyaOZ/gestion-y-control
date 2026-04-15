@@ -5,14 +5,12 @@ namespace App\Providers;
 use App\Models\Attachment;
 use App\Models\ChangeLog;
 use App\Models\Comment;
-use App\Models\Project;
 use App\Models\EmailRequest;
 use App\Models\ResourceLink;
 use App\Models\SystemRecord;
 use App\Models\Subtask;
 use App\Models\Task;
 use App\Models\User;
-use App\Policies\ProjectPolicy;
 use App\Policies\SubtaskPolicy;
 use App\Policies\TaskPolicy;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -38,7 +36,6 @@ class AppServiceProvider extends ServiceProvider
             'user' => User::class,
             'email_request' => EmailRequest::class,
             'system' => SystemRecord::class,
-            'project' => Project::class,
             'task' => Task::class,
             'subtask' => Subtask::class,
             'attachment' => Attachment::class,
@@ -47,7 +44,6 @@ class AppServiceProvider extends ServiceProvider
             'change_log' => ChangeLog::class,
         ]);
 
-        Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(Task::class, TaskPolicy::class);
         Gate::policy(Subtask::class, SubtaskPolicy::class);
     }

@@ -9,7 +9,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailRequestController;
 use App\Http\Controllers\LinkController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SystemRecordController;
 use App\Http\Controllers\SubtaskController;
@@ -23,10 +22,12 @@ Route::get('/', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/correos', [EmailRequestController::class, 'index'])->name('emails.index');
+    Route::get('/correos/reporte/{format}', [EmailRequestController::class, 'report'])->name('emails.report');
     Route::post('/correos', [EmailRequestController::class, 'store'])->name('emails.store');
     Route::patch('/correos/{emailRequest}', [EmailRequestController::class, 'update'])->name('emails.update');
     Route::delete('/correos/{emailRequest}', [EmailRequestController::class, 'destroy'])->name('emails.destroy');
     Route::get('/sistemas', [SystemRecordController::class, 'index'])->name('systems.index');
+    Route::get('/sistemas/reporte/{format}', [SystemRecordController::class, 'report'])->name('systems.report');
     Route::post('/sistemas', [SystemRecordController::class, 'store'])->name('systems.store');
     Route::patch('/sistemas/{system}', [SystemRecordController::class, 'update'])->name('systems.update');
     Route::delete('/sistemas/{system}', [SystemRecordController::class, 'destroy'])->name('systems.destroy');
@@ -35,10 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::get('/search/projects', [SearchController::class, 'projects'])->name('search.projects');
     Route::get('/search/users', [SearchController::class, 'users'])->name('search.users');
 
-    Route::resource('projects', ProjectController::class);
     Route::resource('tasks', TaskController::class);
     Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status');
     Route::resource('subtasks', SubtaskController::class);

@@ -13,9 +13,15 @@ class EmailRequest extends Model
     protected $fillable = [
         'name',
         'email',
+        'email_cargo_id',
         'email_movement_type_id',
         'created_by',
     ];
+
+    public function cargo(): BelongsTo
+    {
+        return $this->belongsTo(EmailCargo::class, 'email_cargo_id');
+    }
 
     public function movementType(): BelongsTo
     {

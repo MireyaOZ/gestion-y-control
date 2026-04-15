@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesManagedModels;
-use App\Models\Project;
 use App\Models\ResourceLink;
 use App\Models\Subtask;
 use App\Models\Task;
@@ -37,11 +36,9 @@ class LinkController extends Controller
         return back()->with('status', 'Link eliminado.');
     }
 
-    protected function authorizeAction(Project|Task|Subtask $model): void
+    protected function authorizeAction(Task|Subtask $model): void
     {
-        if ($model instanceof Project) {
-            $this->authorize('update', $model);
-        } elseif ($model instanceof Task) {
+        if ($model instanceof Task) {
             $this->authorize('update', $model);
         } else {
             $this->authorize('update', $model);

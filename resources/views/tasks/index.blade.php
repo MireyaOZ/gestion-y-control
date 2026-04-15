@@ -22,7 +22,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 class="text-lg font-semibold text-white">{{ $task->title }}</h3>
-                            <p class="mt-1 text-sm text-slate-400">{{ $task->project?->title ?: 'Sin proyecto padre' }}</p>
+                            <p class="mt-1 text-sm text-slate-400">{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha de vencimiento' }}</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <x-status-pill :label="$task->status->name" />

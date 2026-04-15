@@ -16,8 +16,22 @@ class SystemRecord extends Model
         'name',
         'trello_url',
         'system_status_id',
+        'pending_errors',
+        'errors_in_progress',
+        'in_review',
+        'finalized',
         'created_by',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'pending_errors' => 'integer',
+            'errors_in_progress' => 'integer',
+            'in_review' => 'integer',
+            'finalized' => 'integer',
+        ];
+    }
 
     public function status(): BelongsTo
     {

@@ -30,17 +30,6 @@
     </div>
 
     <div class="lg:col-span-2">
-        <label class="app-label">Proyecto relacionado</label>
-        <x-search-select
-            name="project_id"
-            :endpoint="route('search.projects')"
-            :selected-id="old('project_id', $task->project_id ?? null)"
-            :selected-label="old('project_id') ? '' : ($task->project->title ?? '')"
-            placeholder="Buscar proyecto elegible..."
-        />
-    </div>
-
-    <div class="lg:col-span-2">
         <label class="app-label" for="description">Descripción</label>
         <textarea id="description" name="description" rows="6" class="app-input">{{ old('description', $task->description ?? '') }}</textarea>
     </div>

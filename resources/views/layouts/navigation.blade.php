@@ -14,11 +14,6 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    @can('projects.view')
-                        <x-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
-                            Proyectos
-                        </x-nav-link>
-                    @endcan
                     @can('tasks.view')
                         <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')">
                             Tareas
@@ -97,11 +92,6 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            @can('projects.view')
-                <x-responsive-nav-link :href="route('projects.index')" :active="request()->routeIs('projects.*')">
-                    Proyectos
-                </x-responsive-nav-link>
-            @endcan
             @can('tasks.view')
                 <x-responsive-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')">
                     Tareas

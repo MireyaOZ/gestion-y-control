@@ -24,6 +24,29 @@
             </div>
         @endif
 
+        <form method="GET" class="app-card p-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div class="flex-1">
+                    <input
+                        name="search"
+                        value="{{ $search ?? '' }}"
+                        class="app-input mt-0"
+                        placeholder="Buscar por nombre del sistema o estatus..."
+                    >
+                </div>
+
+                <div class="flex gap-3">
+                    <a href="{{ route('systems.index') }}" class="app-button-secondary">Limpiar</a>
+                    <button class="app-button" style="color: #ffffff !important;" type="submit">Buscar</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="flex justify-start gap-3">
+            <a href="{{ route('systems.report', ['format' => 'excel', 'search' => $search ?? '']) }}" class="app-button-secondary">Descargar Excel</a>
+            <a href="{{ route('systems.report', ['format' => 'pdf', 'search' => $search ?? '']) }}" class="app-button-secondary">Descargar PDF</a>
+        </div>
+
         <div class="app-card overflow-hidden">
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-left text-slate-500">
@@ -51,7 +74,17 @@
                                     <span class="text-slate-400">Sin link</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700">{{ $system->status?->name ?? 'Sin estatus' }}</td>
+                            <td class="px-4 py-3 text-slate-700">
+                                <div>{{ $system->status?->name ?? 'Sin estatus' }}</div>
+                                @if ($system->status?->slug === 'en-pruebas')
+                                    <div class="mt-2 space-y-1 text-xs text-slate-500">
+                                        <div>Errores pendientes: {{ $system->pending_errors ?? 0 }}</div>
+                                        <div>Errores en proceso de solución: {{ $system->errors_in_progress ?? 0 }}</div>
+                                        <div>En revisión: {{ $system->in_review ?? 0 }}</div>
+                                        <div>Finalizados: {{ $system->finalized ?? 0 }}</div>
+                                    </div>
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-slate-700">
                                 <button class="inline-flex text-sm text-[#960018] hover:underline" type="button" x-data @click="$dispatch('open-modal', 'attachments-system-record-{{ $system->id }}')">
                                     {{ $system->attachments->count() }} adjunto(s)
@@ -161,7 +194,7 @@
                             <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'edit-system-record-{{ $system->id }}')">Cerrar</button>
                         </div>
 
-                        <form method="POST" action="{{ route('systems.update', $system) }}" enctype="multipart/form-data" class="mt-6 space-y-4">
+                        <form method="POST" action="{{ route('systems.update', $system) }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data='{"selectedStatusId":"{{ (string) old('system_status_id', $system->system_status_id) }}","testingSlug":"en-pruebas","statusSlugs":@json($statuses->mapWithKeys(fn ($status) => [(string) $status->id => $status->slug]))}'>
                             @csrf
                             @method('PATCH')
                             <div>
@@ -181,7 +214,7 @@
 
                             <div>
                                 <label for="edit-system-status-{{ $system->id }}" class="app-label">Estatus</label>
-                                <select id="edit-system-status-{{ $system->id }}" name="system_status_id" class="app-input" required>
+                                <select id="edit-system-status-{{ $system->id }}" name="system_status_id" class="app-input" x-model="selectedStatusId" required>
                                     <option value="">Selecciona un estatus</option>
                                     @foreach ($statuses as $status)
                                         <option value="{{ $status->id }}" @selected(old('system_status_id', $system->system_status_id) == $status->id)>
@@ -191,6 +224,25 @@
                                 </select>
                             </div>
 
+                            <div x-show="statusSlugs[selectedStatusId] === testingSlug" x-transition class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+                                <div>
+                                    <label for="edit-pending-errors-{{ $system->id }}" class="app-label">Errores pendientes</label>
+                                    <input id="edit-pending-errors-{{ $system->id }}" name="pending_errors" type="number" min="0" step="1" class="app-input" value="{{ old('pending_errors', $system->pending_errors ?? 0) }}">
+                                </div>
+                                <div>
+                                    <label for="edit-errors-in-progress-{{ $system->id }}" class="app-label">Errores en proceso de solución</label>
+                                    <input id="edit-errors-in-progress-{{ $system->id }}" name="errors_in_progress" type="number" min="0" step="1" class="app-input" value="{{ old('errors_in_progress', $system->errors_in_progress ?? 0) }}">
+                                </div>
+                                <div>
+                                    <label for="edit-in-review-{{ $system->id }}" class="app-label">En revisión</label>
+                                    <input id="edit-in-review-{{ $system->id }}" name="in_review" type="number" min="0" step="1" class="app-input" value="{{ old('in_review', $system->in_review ?? 0) }}">
+                                </div>
+                                <div>
+                                    <label for="edit-finalized-{{ $system->id }}" class="app-label">Finalizados</label>
+                                    <input id="edit-finalized-{{ $system->id }}" name="finalized" type="number" min="0" step="1" class="app-input" value="{{ old('finalized', $system->finalized ?? 0) }}">
+                                </div>
+                            </div>
+
                             <div>
                                 <label for="edit-system-new-attachments-{{ $system->id }}" class="app-label">Adjuntar archivos</label>
                                 <input id="edit-system-new-attachments-{{ $system->id }}" name="attachments[]" type="file" class="block w-full text-sm text-slate-600" multiple>
@@ -198,7 +250,7 @@
 
                             <div class="flex justify-end gap-3">
                                 <button type="button" class="app-button-secondary" x-data @click="$dispatch('close-modal', 'edit-system-record-{{ $system->id }}')">Cancelar</button>
-                                <button class="app-button" type="submit">Guardar cambios</button>
+                                <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar cambios</button>
                             </div>
                         </form>
                     </div>
@@ -218,7 +270,7 @@
                     <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'create-system-record')">Cerrar</button>
                 </div>
 
-                <form method="POST" action="{{ route('systems.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4">
+                <form method="POST" action="{{ route('systems.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data='{"selectedStatusId":"{{ (string) old('system_status_id') }}","testingSlug":"en-pruebas","statusSlugs":@json($statuses->mapWithKeys(fn ($status) => [(string) $status->id => $status->slug]))}'>
                     @csrf
                     <div>
                         <label for="system-name" class="app-label">Nombre del sistema</label>
@@ -237,7 +289,7 @@
 
                     <div>
                         <label for="system-status" class="app-label">Estatus</label>
-                        <select id="system-status" name="system_status_id" class="app-input" required>
+                        <select id="system-status" name="system_status_id" class="app-input" x-model="selectedStatusId" required>
                             <option value="">Selecciona un estatus</option>
                             @foreach ($statuses as $status)
                                 <option value="{{ $status->id }}" @selected(old('system_status_id') == $status->id)>
@@ -247,6 +299,28 @@
                         </select>
                     </div>
 
+                    <div x-show="statusSlugs[selectedStatusId] === testingSlug" x-transition class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+                        <div>
+                            <label for="pending-errors" class="app-label">Errores pendientes</label>
+                            <input id="pending-errors" name="pending_errors" type="number" min="0" step="1" class="app-input" value="{{ old('pending_errors', 0) }}">
+                        </div>
+
+                        <div>
+                            <label for="errors-in-progress" class="app-label">Errores en proceso de solución</label>
+                            <input id="errors-in-progress" name="errors_in_progress" type="number" min="0" step="1" class="app-input" value="{{ old('errors_in_progress', 0) }}">
+                        </div>
+
+                        <div>
+                            <label for="in-review" class="app-label">En revisión</label>
+                            <input id="in-review" name="in_review" type="number" min="0" step="1" class="app-input" value="{{ old('in_review', 0) }}">
+                        </div>
+
+                        <div>
+                            <label for="finalized" class="app-label">Finalizados</label>
+                            <input id="finalized" name="finalized" type="number" min="0" step="1" class="app-input" value="{{ old('finalized', 0) }}">
+                        </div>
+                    </div>
+
                     <div>
                         <label for="system-attachments" class="app-label">Adjuntar archivos</label>
                         <input id="system-attachments" name="attachments[]" type="file" class="block w-full text-sm text-slate-600" multiple>
@@ -254,7 +328,7 @@
 
                     <div class="flex justify-end gap-3">
                         <button type="button" class="app-button-secondary" x-data @click="$dispatch('close-modal', 'create-system-record')">Cancelar</button>
-                        <button class="app-button" type="submit">Guardar</button>
+                        <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar</button>
                     </div>
                 </form>
             </div>

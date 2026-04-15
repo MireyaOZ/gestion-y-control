@@ -18,7 +18,6 @@
             <div class="grid gap-4 lg:grid-cols-4">
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</span><p class="mt-2 text-white">{{ $task->status->name }}</p></div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Prioridad</span><p class="mt-2 text-white">{{ $task->priority->name }}</p></div>
-                <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Proyecto</span><p class="mt-2 text-white">{{ $task->project?->title ?: 'Sin proyecto' }}</p></div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Vencimiento</span><p class="mt-2 text-white">{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha' }}</p></div>
             </div>
             <p class="mt-6 text-slate-300">{{ $task->description }}</p>

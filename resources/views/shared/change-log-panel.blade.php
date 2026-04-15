@@ -23,7 +23,7 @@
         <div class="mt-6 max-h-[70vh] space-y-3 overflow-y-auto pr-2">
             @forelse ($items as $log)
                 <div class="rounded-2xl border border-white/10 p-4">
-                    <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
+                    <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->localized_action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
                     <div class="prose prose-invert max-w-none">{!! $log->content !!}</div>
                 </div>
             @empty

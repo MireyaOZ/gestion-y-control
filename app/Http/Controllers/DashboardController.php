@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
 use App\Models\Subtask;
 use App\Models\Task;
 use Illuminate\Contracts\View\View;
@@ -11,17 +10,12 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        $user = auth()->user();
-
-        $projectsCount = $user->can('projects.view')
-            ? Project::query()->count()
-            : 0;
+        $user = request()->user();
 
         $tasksCount = Task::query()
             ->when(! $user->can('admin.access'), fn ($query) => $query->where(function ($subQuery) use ($user) {
                 $subQuery->where('created_by', $user->id)
-                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id))
-                    ->orWhereHas('project', fn ($projects) => $projects->where('created_by', $user->id));
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id));
             }))
             ->count();
 
@@ -34,16 +28,15 @@ class DashboardController extends Controller
             ->count();
 
         $upcomingTasks = Task::query()
-            ->with(['status', 'priority', 'project'])
+            ->with(['status', 'priority'])
             ->when(! $user->can('admin.access'), fn ($query) => $query->where(function ($subQuery) use ($user) {
                 $subQuery->where('created_by', $user->id)
-                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id))
-                    ->orWhereHas('project', fn ($projects) => $projects->where('created_by', $user->id));
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id));
             }))
             ->orderBy('due_date')
             ->limit(6)
             ->get();
 
-        return view('dashboard', compact('projectsCount', 'tasksCount', 'subtasksCount', 'upcomingTasks'));
+        return view('dashboard', compact('tasksCount', 'subtasksCount', 'upcomingTasks'));
     }
 }

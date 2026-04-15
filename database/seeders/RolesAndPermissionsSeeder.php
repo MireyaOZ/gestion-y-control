@@ -23,13 +23,13 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         $administrator = Role::query()->firstOrCreate(['name' => 'administrador', 'guard_name' => 'web']);
-        $projectManager = Role::query()->firstOrCreate(['name' => 'gestor_proyectos', 'guard_name' => 'web']);
+        $operationsManager = Role::query()->firstOrCreate(['name' => 'gestor_operativo', 'guard_name' => 'web']);
         $taskManager = Role::query()->firstOrCreate(['name' => 'gestor_tareas', 'guard_name' => 'web']);
         $user = Role::query()->firstOrCreate(['name' => 'usuario', 'guard_name' => 'web']);
 
         $administrator->syncPermissions(PermissionCatalog::all());
 
-        $projectManager->syncPermissions([
+        $operationsManager->syncPermissions([
             'emails.view',
             'emails.create',
             'emails.update',
@@ -38,10 +38,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'systems.create',
             'systems.update',
             'systems.delete',
-            'projects.view',
-            'projects.create',
-            'projects.update',
-            'projects.delete',
             'tasks.view',
             'tasks.assign',
             'subtasks.view',

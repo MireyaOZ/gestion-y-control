@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Concerns;
 
-use App\Models\Project;
 use App\Models\Subtask;
 use App\Models\SystemRecord;
 use App\Models\Task;
@@ -14,7 +13,6 @@ trait ResolvesManagedModels
     protected function resolveOwnedModel(string $type, string|int $id): Model
     {
         return match ($type) {
-            'project' => Project::query()->findOrFail($id),
             'task' => Task::query()->findOrFail($id),
             'subtask' => Subtask::query()->findOrFail($id),
             'system' => SystemRecord::query()->findOrFail($id),

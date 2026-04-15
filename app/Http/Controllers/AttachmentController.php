@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesManagedModels;
 use App\Models\Attachment;
-use App\Models\Project;
 use App\Models\Subtask;
 use App\Models\SystemRecord;
 use App\Models\Task;
@@ -50,11 +49,9 @@ class AttachmentController extends Controller
         return back()->with('status', 'Adjunto eliminado.');
     }
 
-    protected function authorizeAction(Project|Task|Subtask|SystemRecord $model): void
+    protected function authorizeAction(Task|Subtask|SystemRecord $model): void
     {
-        if ($model instanceof Project) {
-            $this->authorize('update', $model);
-        } elseif ($model instanceof Task) {
+        if ($model instanceof Task) {
             $this->authorize('update', $model);
         } elseif ($model instanceof SystemRecord) {
             abort_unless(request()->user()?->can('systems.update'), 403);

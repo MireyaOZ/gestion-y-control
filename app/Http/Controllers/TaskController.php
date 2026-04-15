@@ -22,11 +22,10 @@ class TaskController extends Controller
         $search = (string) $request->string('search');
 
         $tasks = Task::query()
-            ->with(['status', 'priority', 'project', 'creator', 'assignees'])
+            ->with(['status', 'priority', 'creator', 'assignees'])
             ->when(! $user->can('admin.access'), fn ($query) => $query->where(function ($subQuery) use ($user) {
                 $subQuery->where('created_by', $user->id)
-                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id))
-                    ->orWhereHas('project', fn ($projects) => $projects->where('created_by', $user->id));
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id));
             }))
             ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->latest()
@@ -66,7 +65,6 @@ class TaskController extends Controller
         $task->load([
             'status',
             'priority',
-            'project.status',
             'creator',
             'assignees',
             'subtasks.status',
@@ -91,7 +89,7 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
-        $data = $this->validatedData($request, $task);
+        $data = $this->validatedData($request);
         $assigneeIds = $data['assignee_ids'] ?? [];
         unset($data['assignee_ids']);
 
@@ -121,13 +119,13 @@ class TaskController extends Controller
     {
         $this->authorize('delete', $task);
 
-        ChangeLogger::log($task, 'deleted', "<p>Tarea eliminada por ".auth()->user()->name.'.</p>');
+        ChangeLogger::log($task, 'deleted', "<p>Tarea eliminada por ".(string) request()->user()?->name.'.</p>');
         $task->delete();
 
         return redirect()->route('tasks.index')->with('status', 'Tarea eliminada.');
     }
 
-    protected function validatedData(Request $request, ?Task $task = null): array
+    protected function validatedData(Request $request): array
     {
         return $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -135,24 +133,6 @@ class TaskController extends Controller
             'due_date' => ['nullable', 'date'],
             'task_status_id' => ['required', 'exists:task_statuses,id'],
             'priority_id' => ['required', 'exists:priorities,id'],
-            'project_id' => [
-                'nullable',
-                'exists:projects,id',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (! $value) {
-                        return;
-                    }
-
-                    $isEligible = \App\Models\Project::query()
-                        ->whereKey($value)
-                        ->whereHas('status', fn ($builder) => $builder->where('slug', 'visto-bueno-de-diagramacion'))
-                        ->exists();
-
-                    if (! $isEligible) {
-                        $fail('Solo puedes relacionar tareas con proyectos en "visto bueno de diagramacion".');
-                    }
-                },
-            ],
             'assignee_ids' => ['array'],
             'assignee_ids.*' => ['integer', Rule::exists('users', 'id')->where('is_active', true)],
         ]);

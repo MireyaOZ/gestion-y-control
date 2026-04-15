@@ -24,21 +24,73 @@
             </div>
         @endif
 
-        <form class="app-card p-4">
-            <input
-                name="search"
-                value="{{ $search }}"
-                class="app-input"
-                placeholder="Buscar por nombre, correo o tipo de movimiento..."
-            >
+        <form method="GET" class="app-card p-4" x-data="{ showFilters: @js(filled($selectedAreaId)) }">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <div class="flex-1">
+                    <input
+                        name="search"
+                        value="{{ $search }}"
+                        class="app-input mt-0"
+                        placeholder="Buscar por nombre, correo, cargo, dependencia o tipo de movimiento..."
+                        @input="if ($event.target.value.trim() === '' && @js($search !== '')) { $el.form.requestSubmit(); }"
+                    >
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" class="app-button-secondary" @click="showFilters = !showFilters">
+                        <svg class="mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M2.5 4.75A1.25 1.25 0 0 1 3.75 3.5h12.5a1.25 1.25 0 0 1 .97 2.04L12 11.95v3.55a1.25 1.25 0 0 1-.61 1.07l-2 1.2A1.25 1.25 0 0 1 7.5 16.7v-4.75L2.78 5.54a1.25 1.25 0 0 1-.28-.79Z" clip-rule="evenodd" />
+                        </svg>
+                        Filtros
+                    </button>
+                    <button type="submit" class="app-button" style="color: #ffffff !important;">Buscar</button>
+                </div>
+            </div>
+
+            <div x-show="showFilters" x-transition class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                    <div>
+                        <label for="area_id" class="app-label">Buscar por área</label>
+                        <select id="area_id" name="area_id" class="app-input" >
+                            <option value="">Selecciona un área</option>
+                            @foreach ($areaOptions as $areaOption)
+                                <option value="{{ $areaOption['id'] }}" @selected((int) $selectedAreaId === (int) $areaOption['id'])>
+                                    {{ $areaOption['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Al elegir un área se mostrarán sus registros y todos los de sus dependencias hijas.
+                        </p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <a href="{{ route('emails.index') }}" class="app-button-secondary">Limpiar</a>
+                    </div>
+                </div>
+            </div>
+
+            @if ($selectedArea)
+                <div class="mt-3 text-sm text-slate-600">
+                    Filtrando por área: <span class="font-semibold text-slate-900">{{ $selectedArea->name }}</span>
+                </div>
+            @endif
         </form>
 
-        <div class="app-card overflow-hidden">
+        <div class="space-y-3">
+            <div class="flex justify-start gap-3">
+                <a href="{{ route('emails.report', ['format' => 'excel', 'search' => $search, 'area_id' => $selectedAreaId]) }}" class="app-button-secondary">Descargar Excel</a>
+                <a href="{{ route('emails.report', ['format' => 'pdf', 'search' => $search, 'area_id' => $selectedAreaId]) }}" class="app-button-secondary">Descargar PDF</a>
+            </div>
+
+            <div class="app-card overflow-hidden">
             <table class="min-w-full text-sm">
                 <thead class="bg-slate-50 text-left text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Nombre</th>
                         <th class="px-4 py-3">Correo</th>
+                        <th class="px-4 py-3">Cargo</th>
+                        <th class="px-4 py-3">Dependencia</th>
                         <th class="px-4 py-3">Tipo de movimiento</th>
                         <th class="px-4 py-3">Fecha de creación</th>
                         <th class="px-4 py-3">Link de interés</th>
@@ -51,6 +103,8 @@
                         <tr class="border-t border-slate-200">
                             <td class="px-4 py-3 font-medium text-slate-900">{{ $emailRequest->name }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $emailRequest->email }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $emailRequest->cargo?->name ?? 'Sin cargo' }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $emailRequest->cargo?->parent_name ?? 'Sin area dependiente' }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $emailRequest->movementType->name }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $emailRequest->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-4 py-3 text-slate-700">
@@ -98,11 +152,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-6 text-center text-slate-500">No hay solicitudes de correos registradas.</td>
+                            <td colspan="9" class="px-4 py-6 text-center text-slate-500">No hay solicitudes de correos registradas.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
 
         {{ $emailRequests->links() }}
@@ -135,6 +190,18 @@
                             <div>
                                 <label for="edit-link-{{ $emailRequest->id }}" class="app-label">Link</label>
                                 <input id="edit-link-{{ $emailRequest->id }}" name="link" type="url" class="app-input" value="{{ old('link', $emailRequest->links->first()?->url) }}" placeholder="https://...">
+                            </div>
+
+                            <div>
+                                <label for="edit-email-cargo-{{ $emailRequest->id }}" class="app-label">Cargo</label>
+                                <select id="edit-email-cargo-{{ $emailRequest->id }}" name="email_cargo_id" class="app-input" required>
+                                    <option value="">Selecciona un cargo</option>
+                                    @foreach ($cargos as $cargo)
+                                        <option value="{{ $cargo->id }}" @selected(old('email_cargo_id', $emailRequest->email_cargo_id) == $cargo->id)>
+                                            {{ $cargo->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <div>
@@ -171,7 +238,7 @@
                     <div class="mt-6 max-h-[70vh] space-y-3 overflow-y-auto pr-2">
                         @forelse ($emailRequest->changeLogs as $log)
                             <div class="rounded-2xl border border-slate-200 p-4">
-                                <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
+                                <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->localized_action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
                                 <div class="prose max-w-none text-slate-700">{!! $log->content !!}</div>
                             </div>
                         @empty
@@ -209,6 +276,18 @@
                     <div>
                         <label for="link" class="app-label">Link</label>
                         <input id="link" name="link" type="url" class="app-input" value="{{ old('link') }}" placeholder="https://...">
+                    </div>
+
+                    <div>
+                        <label for="email_cargo_id" class="app-label">Cargo</label>
+                        <select id="email_cargo_id" name="email_cargo_id" class="app-input" required>
+                            <option value="">Selecciona un cargo</option>
+                            @foreach ($cargos as $cargo)
+                                <option value="{{ $cargo->id }}" @selected(old('email_cargo_id') == $cargo->id)>
+                                    {{ $cargo->name }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div>
