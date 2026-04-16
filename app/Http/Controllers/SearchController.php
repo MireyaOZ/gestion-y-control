@@ -10,7 +10,9 @@ class SearchController extends Controller
 {
     public function users(Request $request): JsonResponse
     {
-        abort_unless(auth()->user()->can('tasks.assign') || auth()->user()->can('subtasks.assign'), 403);
+        $user = $request->user();
+
+        abort_unless($user?->can('tasks.assign') || $user?->can('subtasks.assign'), 403);
 
         $query = (string) $request->string('query');
 
