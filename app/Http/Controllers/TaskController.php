@@ -69,6 +69,7 @@ class TaskController extends Controller
             'assignees',
             'subtasks.status',
             'subtasks.priority',
+            'subtasks.assignees',
             'attachments.uploader',
             'links.creator',
             'comments.author',

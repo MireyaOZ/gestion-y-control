@@ -14,6 +14,8 @@ class ChangeLog extends Model
         'deleted' => 'Eliminado',
         'assigned' => 'Asignado',
         'status_changed' => 'Estado actualizado',
+        'attachment_added' => 'Adjunto agregado',
+        'attachment_deleted' => 'Adjunto eliminado',
     ];
 
     protected $fillable = [
@@ -42,5 +44,12 @@ class ChangeLog extends Model
             ->replace('_', ' ')
             ->headline()
             ->toString();
+    }
+
+    public function getStatusGroupAttribute(): string
+    {
+        preg_match('/data-status-group="([^"]+)"/', $this->content, $matches);
+
+        return $matches[1] ?? 'Sin estatus';
     }
 }

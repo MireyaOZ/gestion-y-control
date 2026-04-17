@@ -55,8 +55,8 @@
                         <th class="px-4 py-3">Fecha de creación</th>
                         <th class="px-4 py-3">Link de interés</th>
                         <th class="px-4 py-3">Estatus</th>
-                        <th class="px-4 py-3">Adjuntos</th>
                         <th class="px-4 py-3">Trello</th>
+                        <th class="px-4 py-3">Historial de cambios</th>
                         <th class="px-4 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -75,7 +75,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-slate-700">
-                                <div>{{ $system->status?->name ?? 'Sin estatus' }}</div>
+                                <div>{{ $system->status?->display_name ?? 'Sin estatus' }}</div>
                                 @if ($system->status?->slug === 'en-pruebas')
                                     <div class="mt-2 space-y-1 text-xs text-slate-500">
                                         <div>Tarjetas errores pendientes: {{ $system->pending_errors ?? 0 }}</div>
@@ -86,11 +86,6 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-slate-700">
-                                <button class="inline-flex text-sm text-[#960018] hover:underline" type="button" x-data @click="$dispatch('open-modal', 'attachments-system-record-{{ $system->id }}')">
-                                    {{ $system->attachments->count() }} adjunto(s)
-                                </button>
-                            </td>
-                            <td class="px-4 py-3 text-slate-700">
                                 @if ($system->trello_url)
                                     <a href="{{ $system->trello_url }}" target="_blank" class="inline-flex text-sm text-[#960018] hover:underline">
                                         Abrir Trello
@@ -99,11 +94,13 @@
                                     <span class="text-slate-400">Sin Trello</span>
                                 @endif
                             </td>
+                            <td class="px-4 py-3 text-slate-700">
+                                <button class="app-button-secondary" type="button" x-data @click="$dispatch('open-modal', 'history-system-record-{{ $system->id }}')">
+                                    Ver historial
+                                </button>
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex justify-end gap-2">
-                                    <button class="app-button-secondary" type="button" x-data @click="$dispatch('open-modal', 'attachments-system-record-{{ $system->id }}')">
-                                        Adjuntos
-                                    </button>
                                     @can('systems.update')
                                         <button class="app-button-secondary" type="button" x-data @click="$dispatch('open-modal', 'edit-system-record-{{ $system->id }}')">
                                             Editar
@@ -133,53 +130,43 @@
         {{ $systems->links() }}
 
         @foreach ($systems as $system)
-            <x-modal name="attachments-system-record-{{ $system->id }}" :show="false" maxWidth="lg">
+            <x-modal name="history-system-record-{{ $system->id }}" :show="false" maxWidth="2xl">
                 <div class="p-6">
                     <div class="flex items-center justify-between gap-4">
                         <div>
-                            <h3 class="text-lg font-semibold text-white">Adjuntos de {{ $system->name }}</h3>
-                            <p class="mt-1 text-sm text-slate-400">Consulta o carga archivos relacionados a este sistema.</p>
+                            <h3 class="text-lg font-semibold text-white">Historial de {{ $system->name }}</h3>
+                            <p class="mt-1 text-sm text-slate-400">Consulta los cambios agrupados por el estatus que tenía el sistema en cada momento.</p>
                         </div>
-                        <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'attachments-system-record-{{ $system->id }}')">Cerrar</button>
+                        <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'history-system-record-{{ $system->id }}')">Cerrar</button>
                     </div>
 
-                    <div class="mt-6 space-y-3">
-                        @forelse ($system->attachments as $attachment)
-                            <div class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-900">{{ $attachment->original_name }}</p>
-                                    <p class="mt-1 text-xs text-slate-500">{{ number_format($attachment->size / 1024, 1) }} KB</p>
+                    @php
+                        $historyByStatus = $system->changeLogs->groupBy(fn ($log) => $log->status_group);
+                    @endphp
+
+                    <div class="mt-6 max-h-[70vh] space-y-4 overflow-y-auto pr-2">
+                        @forelse ($historyByStatus as $statusName => $logs)
+                            <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-slate-900">Estatus: {{ $statusName }}</h4>
+                                        <p class="text-xs text-slate-500">{{ $logs->count() }} cambio(s) registrado(s).</p>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-3">
-                                    <a class="text-xs text-[#960018] hover:underline" href="{{ asset('storage/'.$attachment->path) }}" target="_blank">Abrir</a>
-                                    @can('systems.update')
-                                        <form method="POST" action="{{ route('attachments.destroy', $attachment) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="text-xs text-rose-600" type="submit">Eliminar</button>
-                                        </form>
-                                    @endcan
+
+                                <div class="mt-4 space-y-3">
+                                    @foreach ($logs as $log)
+                                        <article class="rounded-2xl border border-slate-200 bg-white p-4">
+                                            <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->localized_action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
+                                            <div class="prose max-w-none text-slate-700">{!! preg_replace('/<div data-status-group="[^"]+">|<\/div>$/', '', $log->content, 1) !!}</div>
+                                        </article>
+                                    @endforeach
                                 </div>
-                            </div>
+                            </section>
                         @empty
-                            <p class="text-sm text-slate-500">No hay archivos adjuntos.</p>
+                            <p class="text-sm text-slate-500">No hay historial registrado para este sistema.</p>
                         @endforelse
                     </div>
-
-                    @can('systems.update')
-                        <form method="POST" action="{{ route('attachments.store', ['system', $system->id]) }}" enctype="multipart/form-data" class="mt-6 space-y-4">
-                            @csrf
-                            <div>
-                                <label for="system-attachments-{{ $system->id }}" class="app-label">Adjuntar archivos</label>
-                                <input id="system-attachments-{{ $system->id }}" type="file" name="file" class="block w-full text-sm text-slate-600">
-                            </div>
-
-                            <div class="flex justify-end gap-3">
-                                <button type="button" class="app-button-secondary" x-data @click="$dispatch('close-modal', 'attachments-system-record-{{ $system->id }}')">Cancelar</button>
-                                <button class="app-button" type="submit">Adjuntar</button>
-                            </div>
-                        </form>
-                    @endcan
                 </div>
             </x-modal>
 
@@ -218,7 +205,7 @@
                                     <option value="">Selecciona un estatus</option>
                                     @foreach ($statuses as $status)
                                         <option value="{{ $status->id }}" @selected(old('system_status_id', $system->system_status_id) == $status->id)>
-                                            {{ $status->name }}
+                                                {{ $status->display_name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -293,7 +280,7 @@
                             <option value="">Selecciona un estatus</option>
                             @foreach ($statuses as $status)
                                 <option value="{{ $status->id }}" @selected(old('system_status_id') == $status->id)>
-                                    {{ $status->name }}
+                                    {{ $status->display_name }}
                                 </option>
                             @endforeach
                         </select>

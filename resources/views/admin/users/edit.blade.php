@@ -11,7 +11,11 @@
             <label class="flex items-center gap-2 text-sm text-slate-200"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $user->is_active))> Usuario activo</label>
             <div class="grid gap-2 md:grid-cols-2">
                 @foreach ($roles as $role)
-                    <label class="rounded-2xl border border-white/10 px-3 py-2 text-sm text-slate-200"><input type="checkbox" name="roles[]" value="{{ $role->name }}" @checked(collect(old('roles', $user->roles->pluck('name')->all()))->contains($role->name))> {{ $role->name }}</label>
+                    <label class="rounded-2xl border border-white/10 px-3 py-2 text-sm text-slate-200">
+                        <input type="checkbox" name="roles[]" value="{{ $role->name }}" @checked(collect(old('roles', $user->roles->pluck('name')->all()))->contains($role->name))>
+                        {{ \App\Support\PermissionCatalog::roleLabel($role->name) }}
+                        <span class="block text-xs text-slate-400">{{ $role->name }}</span>
+                    </label>
                 @endforeach
             </div>
             <button class="app-button" type="submit">Guardar</button>

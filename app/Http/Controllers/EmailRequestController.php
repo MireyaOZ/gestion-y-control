@@ -22,7 +22,7 @@ class EmailRequestController extends Controller
     {
         abort_unless($request->user()->can('emails.view'), 403);
 
-        [$cargos, $search, $selectedAreaId, $selectedArea, $areaOptions] = $this->emailsFilterContext($request);
+        [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedDateFrom, $selectedDateTo, $dateLabel, $areaOptions] = $this->emailsFilterContext($request);
 
         $emailRequests = $this->buildFilteredEmailRequestsQuery($request, $cargos)
             ->latest()
@@ -31,14 +31,27 @@ class EmailRequestController extends Controller
 
         $movementTypes = EmailMovementType::query()->orderBy('name')->get();
 
-        return view('emails.index', compact('emailRequests', 'cargos', 'movementTypes', 'search', 'selectedAreaId', 'selectedArea', 'areaOptions'));
+        return view('emails.index', compact(
+            'emailRequests',
+            'cargos',
+            'movementTypes',
+            'search',
+            'selectedAreaId',
+            'selectedArea',
+            'selectedMovementTypeId',
+            'selectedMovementType',
+            'selectedDateFrom',
+            'selectedDateTo',
+            'dateLabel',
+            'areaOptions'
+        ));
     }
 
     public function report(Request $request, string $format): Response
     {
         abort_unless($request->user()->can('emails.view'), 403);
 
-        [$cargos, $search, $selectedAreaId, $selectedArea] = $this->emailsFilterContext($request);
+        [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedDateFrom, $selectedDateTo, $dateLabel] = $this->emailsFilterContext($request);
 
         $emailRequests = $this->buildFilteredEmailRequestsQuery($request, $cargos)
             ->latest()
@@ -47,11 +60,12 @@ class EmailRequestController extends Controller
         $generatedAt = now();
         $reportTitle = 'Reporte de correos';
         $areaLabel = $selectedArea?->name ?? 'Todas las áreas';
-        $parentAreaLabel = $selectedArea?->parent_name ?? ($selectedArea ? 'Sin area dependiente' : 'Todas las areas');
+        $parentAreaLabel = $selectedArea?->parent_name ?? ($selectedArea ? 'Sin superior' : 'Todas las areas');
+        $movementTypeLabel = $selectedMovementType?->name ?? 'Todos los movimientos';
         $filenameBase = 'reporte-correos-'.$generatedAt->format('Ymd-His');
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('emails.report-pdf', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'search'))
+            $pdf = Pdf::loadView('emails.report-pdf', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'dateLabel', 'search'))
                 ->setPaper('a4', 'landscape');
 
             return $pdf->download($filenameBase.'.pdf');
@@ -59,7 +73,7 @@ class EmailRequestController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'search'))->render();
+        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'dateLabel', 'search'))->render();
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
@@ -222,23 +236,42 @@ class EmailRequestController extends Controller
     {
         $search = (string) $request->string('search');
         $selectedAreaId = $request->integer('area_id') ?: null;
+        $selectedMovementTypeId = $request->integer('movement_type_id') ?: null;
+        [$selectedDateFrom, $selectedDateTo] = $this->normalizedDateRange(
+            $request->string('created_at_from')->toString(),
+            $request->string('created_at_to')->toString(),
+            $request->string('created_at')->toString()
+        );
         $cargos = EmailCargo::query()->orderBy('sort_order')->orderBy('name')->get();
         $selectedArea = $selectedAreaId ? $cargos->firstWhere('id', $selectedAreaId) : null;
+        $selectedMovementType = $selectedMovementTypeId
+            ? EmailMovementType::query()->find($selectedMovementTypeId)
+            : null;
+        $dateLabel = $this->buildDateRangeLabel($selectedDateFrom, $selectedDateTo);
         $areaOptions = $this->buildAreaOptions($cargos);
 
-        return [$cargos, $search, $selectedAreaId, $selectedArea, $areaOptions];
+        return [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedDateFrom, $selectedDateTo, $dateLabel, $areaOptions];
     }
 
     protected function buildFilteredEmailRequestsQuery(Request $request, Collection $cargos): Builder
     {
         $search = (string) $request->string('search');
         $selectedAreaId = $request->integer('area_id') ?: null;
+        $selectedMovementTypeId = $request->integer('movement_type_id') ?: null;
+        [$selectedDateFrom, $selectedDateTo] = $this->normalizedDateRange(
+            $request->string('created_at_from')->toString(),
+            $request->string('created_at_to')->toString(),
+            $request->string('created_at')->toString()
+        );
         $selectedArea = $selectedAreaId ? $cargos->firstWhere('id', $selectedAreaId) : null;
         $areaIds = $selectedArea ? $this->descendantAreaIds($selectedArea, $cargos) : [];
 
         return EmailRequest::query()
             ->with(['cargo', 'movementType', 'links', 'changeLogs.author'])
             ->when($selectedArea && $areaIds !== [], fn ($query) => $query->whereIn('email_cargo_id', $areaIds))
+            ->when($selectedMovementTypeId, fn ($query) => $query->where('email_movement_type_id', $selectedMovementTypeId))
+            ->when($selectedDateFrom !== '', fn ($query) => $query->whereDate('created_at', '>=', $selectedDateFrom))
+            ->when($selectedDateTo !== '', fn ($query) => $query->whereDate('created_at', '<=', $selectedDateTo))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
@@ -249,6 +282,60 @@ class EmailRequestController extends Controller
                         ->orWhereHas('movementType', fn ($movementTypeQuery) => $movementTypeQuery->where('name', 'like', "%{$search}%"));
                 });
             });
+    }
+
+    protected function normalizedDateRange(?string $dateFrom, ?string $dateTo, ?string $fallbackDate = null): array
+    {
+        $dateFrom = trim((string) $dateFrom);
+        $dateTo = trim((string) $dateTo);
+        $fallbackDate = trim((string) $fallbackDate);
+
+        if ($dateFrom === '' && $dateTo === '' && $fallbackDate !== '') {
+            return [$fallbackDate, $fallbackDate];
+        }
+
+        if ($dateFrom !== '' && $dateTo === '') {
+            return [$dateFrom, $dateFrom];
+        }
+
+        if ($dateFrom === '' && $dateTo !== '') {
+            return [$dateTo, $dateTo];
+        }
+
+        if ($dateFrom !== '' && $dateTo !== '' && $dateFrom > $dateTo) {
+            return [$dateTo, $dateFrom];
+        }
+
+        return [$dateFrom, $dateTo];
+    }
+
+    protected function buildDateRangeLabel(?string $dateFrom, ?string $dateTo): string
+    {
+        $dateFrom = trim((string) $dateFrom);
+        $dateTo = trim((string) $dateTo);
+        $formattedDateFrom = $dateFrom !== '' ? $this->formatDateLabel($dateFrom) : '';
+        $formattedDateTo = $dateTo !== '' ? $this->formatDateLabel($dateTo) : '';
+
+        if ($dateFrom !== '' && $dateTo !== '') {
+            return $dateFrom === $dateTo
+                ? $formattedDateFrom
+                : $formattedDateFrom.' a '.$formattedDateTo;
+        }
+
+        if ($dateFrom !== '') {
+            return 'Desde '.$formattedDateFrom;
+        }
+
+        if ($dateTo !== '') {
+            return 'Hasta '.$formattedDateTo;
+        }
+
+        return 'Todas las fechas';
+    }
+
+    protected function formatDateLabel(string $date): string
+    {
+        return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
     }
 
     protected function buildAreaOptions(Collection $cargos): Collection

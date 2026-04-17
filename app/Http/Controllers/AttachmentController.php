@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Models\Subtask;
 use App\Models\SystemRecord;
 use App\Models\Task;
+use App\Services\ChangeLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -36,12 +37,34 @@ class AttachmentController extends Controller
             'size' => $file->getSize(),
         ]);
 
+        if ($model instanceof SystemRecord) {
+            $model->load('status');
+
+            ChangeLogger::log(
+                $model,
+                'attachment_added',
+                '<div data-status-group="'.e($model->status?->name ?? 'Sin estatus').'"><p>Adjunto agregado por '.e($request->user()->name).'.</p><div><strong>Archivo agregado:</strong><ul style="margin:6px 0 0 18px;list-style:disc;"><li>'.e($file->getClientOriginalName()).' <a href="'.e(asset('storage/'.$path)).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir archivo</a></li></ul></div></div>'
+            );
+        }
+
         return back()->with('status', 'Adjunto cargado.');
     }
 
     public function destroy(Attachment $attachment): RedirectResponse
     {
         $this->authorizeAction($attachment->attachable);
+
+        $attachable = $attachment->attachable;
+
+        if ($attachable instanceof SystemRecord) {
+            $attachable->load('status');
+
+            ChangeLogger::log(
+                $attachable,
+                'attachment_deleted',
+                '<div data-status-group="'.e($attachable->status?->name ?? 'Sin estatus').'"><p>Adjunto eliminado por '.e(request()->user()?->name ?? 'Sistema').'.</p><div><strong>Archivo eliminado:</strong><ul style="margin:6px 0 0 18px;list-style:disc;"><li>'.e($attachment->original_name).'</li></ul></div></div>'
+            );
+        }
 
         Storage::disk($attachment->disk)->delete($attachment->path);
         $attachment->delete();

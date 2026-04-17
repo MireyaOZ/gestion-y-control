@@ -7,10 +7,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SystemStatus extends Model
 {
+    protected $appends = [
+        'display_name',
+    ];
+
     protected $fillable = [
         'name',
         'slug',
     ];
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->slug === 'en-pruebas'
+            ? 'En pruebas internas'
+            : $this->name;
+    }
 
     public function systems(): HasMany
     {

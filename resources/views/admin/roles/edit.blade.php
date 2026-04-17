@@ -8,7 +8,11 @@
             <input name="name" class="app-input" value="{{ old('name', $role->name) }}" required>
             <div class="grid gap-2 md:grid-cols-2">
                 @foreach ($permissions as $permission)
-                    <label class="rounded-2xl border border-white/10 px-3 py-2 text-sm text-slate-200"><input type="checkbox" name="permissions[]" value="{{ $permission->name }}" @checked($role->permissions->contains('name', $permission->name))> {{ $permission->name }}</label>
+                    <label class="rounded-2xl border border-white/10 px-3 py-2 text-sm text-slate-200">
+                        <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" @checked($role->permissions->contains('name', $permission->name))>
+                        {{ \App\Support\PermissionCatalog::permissionLabel($permission->name) }}
+                        <span class="block text-xs text-slate-400">{{ $permission->name }}</span>
+                    </label>
                 @endforeach
             </div>
             <button class="app-button" type="submit">Guardar</button>

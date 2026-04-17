@@ -14,7 +14,7 @@
                 <td>{{ $system->name }}</td>
                 <td>{{ $system->created_at->format('d/m/Y H:i') }}</td>
                 <td>
-                    {{ $system->status?->name ?? 'Sin estatus' }}
+                    {{ $system->status?->display_name ?? 'Sin estatus' }}
                     @if ($system->status?->slug === 'en-pruebas')
                         <div style="margin-top: 8px; font-size: 11px; color: #475569; line-height: 1.6;">
                             <div>Tarjetas errores pendientes: {{ $system->pending_errors ?? 0 }}</div>

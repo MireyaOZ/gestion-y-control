@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ChangeLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\SystemRecord;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
 
 class SystemRecordController extends Controller
 {
+    private const CHANGE_ARROW = '<span style="color:#2563eb;font-weight:700;">&rarr;</span>';
+
     public function index(Request $request): View
     {
         abort_unless($request->user()->can('systems.view'), 403);
@@ -22,7 +25,7 @@ class SystemRecordController extends Controller
         $search = (string) $request->string('search');
 
         $systems = $this->buildFilteredSystemsQuery($request)
-            ->with(['links', 'attachments'])
+            ->with(['links', 'attachments', 'changeLogs.author'])
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -83,7 +86,17 @@ class SystemRecordController extends Controller
         ]);
 
         $this->syncLink($system, $data['link'] ?? null, $request->user()->id);
-        $this->syncAttachments($system, $request->file('attachments', []), $request->user()->id);
+        $uploadedAttachments = $this->syncAttachments($system, $request->file('attachments', []), $request->user()->id);
+        $system->load(['status', 'links']);
+
+        ChangeLogger::log(
+            $system,
+            'created',
+            $this->wrapHistoryContent(
+                $system->status?->name,
+                $this->buildCreatedSystemLogContent($system, $request->user()->name, $uploadedAttachments)
+            )
+        );
 
         return redirect()->route('systems.index')->with('status', 'Sistema creado correctamente.');
     }
@@ -93,6 +106,15 @@ class SystemRecordController extends Controller
         abort_unless($request->user()->can('systems.update'), 403);
 
         $data = $this->validatedData($request);
+        $originalName = $system->name;
+        $originalTrelloUrl = $system->trello_url;
+        $originalStatusId = $system->system_status_id;
+        $originalStatusName = $system->status?->display_name ?? 'Sin estatus';
+        $originalLink = $system->links->first()?->url;
+        $originalPendingErrors = $system->pending_errors;
+        $originalErrorsInProgress = $system->errors_in_progress;
+        $originalInReview = $system->in_review;
+        $originalFinalized = $system->finalized;
 
         $system->update([
             'name' => $data['name'],
@@ -105,7 +127,47 @@ class SystemRecordController extends Controller
         ]);
 
         $this->syncLink($system, $data['link'] ?? null, $request->user()->id);
-        $this->syncAttachments($system, $request->file('attachments', []), $request->user()->id);
+        $uploadedAttachments = $this->syncAttachments($system, $request->file('attachments', []), $request->user()->id);
+        $system->load(['status', 'links']);
+
+        $changes = [];
+
+        if ($originalName !== $system->name) {
+            $changes[] = '<p><strong>Nombre del sistema:</strong> '.e($originalName).' '.self::CHANGE_ARROW.' '.e($system->name).'</p>';
+        }
+
+        $updatedLink = $system->links->first()?->url;
+        if ($originalLink !== $updatedLink) {
+            $changes[] = '<p><strong>Link:</strong> '.$this->renderHistoryUrl($originalLink).' '.self::CHANGE_ARROW.' '.$this->renderHistoryUrl($updatedLink).'</p>';
+        }
+
+        if ($originalTrelloUrl !== $system->trello_url) {
+            $changes[] = '<p><strong>Trello:</strong> '.e($originalTrelloUrl ?: 'Sin Trello').' '.self::CHANGE_ARROW.' '.e($system->trello_url ?: 'Sin Trello').'</p>';
+        }
+
+        if ($originalStatusId !== $system->system_status_id) {
+            $changes[] = '<p><strong>Estatus:</strong> '.e($originalStatusName).' '.self::CHANGE_ARROW.' '.e($system->status?->display_name ?? 'Sin estatus').'</p>';
+        }
+
+        $this->appendMetricChange($changes, 'Tarjetas errores pendientes', $originalPendingErrors, $system->pending_errors);
+        $this->appendMetricChange($changes, 'Tarjetas errores en proceso de solución', $originalErrorsInProgress, $system->errors_in_progress);
+        $this->appendMetricChange($changes, 'Tarjetas en revisión', $originalInReview, $system->in_review);
+        $this->appendMetricChange($changes, 'Tarjetas finalizadas', $originalFinalized, $system->finalized);
+
+        if ($uploadedAttachments !== []) {
+            $changes[] = $this->renderAttachmentList('Adjuntos agregados', $uploadedAttachments, true);
+        }
+
+        if ($changes !== []) {
+            ChangeLogger::log(
+                $system,
+                $originalStatusId !== $system->system_status_id ? 'status_changed' : 'updated',
+                $this->wrapHistoryContent(
+                    $system->status?->name,
+                    '<p>Sistema actualizado por '.e($request->user()->name).'.</p>'.implode('', $changes)
+                )
+            );
+        }
 
         return redirect()->route('systems.index')->with('status', 'Sistema actualizado correctamente.');
     }
@@ -113,6 +175,17 @@ class SystemRecordController extends Controller
     public function destroy(Request $request, SystemRecord $system): RedirectResponse
     {
         abort_unless($request->user()->can('systems.delete'), 403);
+
+        $system->load(['status', 'links', 'attachments']);
+
+        ChangeLogger::log(
+            $system,
+            'deleted',
+            $this->wrapHistoryContent(
+                $system->status?->name,
+                $this->buildDeletedSystemLogContent($system, $request->user()->name)
+            )
+        );
 
         $system->links()->delete();
         $system->comments()->delete();
@@ -174,8 +247,10 @@ class SystemRecordController extends Controller
             });
     }
 
-    protected function syncAttachments(SystemRecord $system, array $files, int $userId): void
+    protected function syncAttachments(SystemRecord $system, array $files, int $userId): array
     {
+        $uploadedAttachments = [];
+
         foreach ($files as $file) {
             if (! $file instanceof UploadedFile) {
                 continue;
@@ -183,7 +258,7 @@ class SystemRecordController extends Controller
 
             $path = $file->store('attachments/system', 'public');
 
-            $system->attachments()->create([
+            $attachment = $system->attachments()->create([
                 'uploaded_by' => $userId,
                 'disk' => 'public',
                 'path' => $path,
@@ -191,7 +266,14 @@ class SystemRecordController extends Controller
                 'mime_type' => $file->getMimeType(),
                 'size' => $file->getSize(),
             ]);
+
+            $uploadedAttachments[] = [
+                'name' => $attachment->original_name,
+                'url' => asset('storage/'.$attachment->path),
+            ];
         }
+
+        return $uploadedAttachments;
     }
 
     protected function syncLink(SystemRecord $system, ?string $url, int $userId): void
@@ -220,5 +302,115 @@ class SystemRecordController extends Controller
             'url' => $url,
             'created_by' => $userId,
         ]);
+    }
+
+    protected function appendMetricChange(array &$changes, string $label, mixed $originalValue, mixed $updatedValue): void
+    {
+        $originalValue = $originalValue ?? 0;
+        $updatedValue = $updatedValue ?? 0;
+
+        if ((int) $originalValue !== (int) $updatedValue) {
+            $changes[] = '<p><strong>'.e($label).':</strong> '.e((string) $originalValue).' '.self::CHANGE_ARROW.' '.e((string) $updatedValue).'</p>';
+        }
+    }
+
+    protected function buildCreatedSystemLogContent(SystemRecord $system, string $authorName, array $uploadedAttachments): string
+    {
+        $content = '<p>Sistema registrado por '.e($authorName).'.</p>'
+            .'<p><strong>Nombre del sistema:</strong> '.e($system->name).'</p>'
+            .'<p><strong>Estatus:</strong> '.e($system->status?->display_name ?? 'Sin estatus').'</p>'
+            .'<p><strong>Link:</strong> '.$this->renderHistoryUrl($system->links->first()?->url).'</p>'
+            .'<p><strong>Trello:</strong> '.e($system->trello_url ?: 'Sin Trello').'</p>';
+
+        $content .= $this->renderTestingMetricsSnapshot($system);
+
+        if ($uploadedAttachments !== []) {
+            $content .= $this->renderAttachmentList('Adjuntos agregados', $uploadedAttachments, true);
+        }
+
+        return $content;
+    }
+
+    protected function buildDeletedSystemLogContent(SystemRecord $system, string $authorName): string
+    {
+        $content = '<p>Sistema eliminado por '.e($authorName).'.</p>'
+            .'<p><strong>Nombre del sistema:</strong> '.e($system->name).'</p>'
+            .'<p><strong>Estatus:</strong> '.e($system->status?->display_name ?? 'Sin estatus').'</p>'
+            .'<p><strong>Link:</strong> '.$this->renderHistoryUrl($system->links->first()?->url).'</p>'
+            .'<p><strong>Trello:</strong> '.e($system->trello_url ?: 'Sin Trello').'</p>';
+
+        $content .= $this->renderTestingMetricsSnapshot($system);
+
+        if ($system->attachments->isNotEmpty()) {
+            $content .= $this->renderAttachmentList('Adjuntos existentes al eliminar', $system->attachments->pluck('original_name')->all());
+        }
+
+        return $content;
+    }
+
+    protected function renderTestingMetricsSnapshot(SystemRecord $system): string
+    {
+        if ($system->status?->slug !== 'en-pruebas') {
+            return '';
+        }
+
+        return '<p><strong>Tarjetas errores pendientes:</strong> '.e((string) ($system->pending_errors ?? 0)).'</p>'
+            .'<p><strong>Tarjetas errores en proceso de solución:</strong> '.e((string) ($system->errors_in_progress ?? 0)).'</p>'
+            .'<p><strong>Tarjetas en revisión:</strong> '.e((string) ($system->in_review ?? 0)).'</p>'
+            .'<p><strong>Tarjetas finalizadas:</strong> '.e((string) ($system->finalized ?? 0)).'</p>';
+    }
+
+    protected function renderAttachmentList(string $title, array $attachments, bool $includeLinks = false): string
+    {
+        $items = collect($attachments)
+            ->filter()
+            ->map(function (mixed $attachment) use ($includeLinks) {
+                if (is_array($attachment)) {
+                    $name = $attachment['name'] ?? '';
+                    $url = $attachment['url'] ?? null;
+
+                    if ($name === '') {
+                        return null;
+                    }
+
+                    if ($includeLinks && filled($url)) {
+                        return '<li>'.e($name).' <a href="'.e($url).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir archivo</a></li>';
+                    }
+
+                    return '<li>'.e($name).'</li>';
+                }
+
+                if (! is_string($attachment) || $attachment === '') {
+                    return null;
+                }
+
+                return '<li>'.e($attachment).'</li>';
+            })
+            ->filter()
+            ->implode('');
+
+        if ($items === '') {
+            return '';
+        }
+
+        return '<div><strong>'.e($title).':</strong><ul style="margin:6px 0 0 18px;list-style:disc;">'.$items.'</ul></div>';
+    }
+
+    protected function renderHistoryUrl(?string $url): string
+    {
+        if (blank($url)) {
+            return 'Sin link';
+        }
+
+        return '<a href="'.e($url).'" target="_blank" style="color:#960018;text-decoration:underline;">'.e($url).'</a>';
+    }
+
+    protected function wrapHistoryContent(?string $statusName, string $content): string
+    {
+        if ($statusName === 'En pruebas') {
+            $statusName = 'En pruebas internas';
+        }
+
+        return '<div data-status-group="'.e($statusName ?: 'Sin estatus').'">'.$content.'</div>';
     }
 }

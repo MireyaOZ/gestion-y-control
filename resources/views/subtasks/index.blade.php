@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold text-white">Subtareas</h2>
-                <p class="text-sm text-slate-400">Seguimiento fino por tarea padre y responsables.</p>
+                <p class="text-sm  text-white/80">Seguimiento fino por tarea padre y responsables.</p>
             </div>
             @can('subtasks.create')
                 <a href="{{ route('subtasks.create') }}" class="app-button-light">Nueva subtarea</a>
@@ -25,7 +25,7 @@
                             <p class="mt-1 text-sm text-slate-400">{{ $subtask->task->title }}</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <x-status-pill :label="$subtask->status->name" />
+                            <x-status-pill :label="$subtask->status->name" :tone="$subtask->status->slug" />
                             <x-status-pill :label="$subtask->priority->name" />
                         </div>
                     </div>

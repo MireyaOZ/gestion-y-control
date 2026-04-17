@@ -14,7 +14,12 @@
     <div class="space-y-6">
         <section class="app-card p-6">
             <div class="grid gap-4 lg:grid-cols-4">
-                <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</span><p class="mt-2 text-white">{{ $subtask->status->name }}</p></div>
+                <div>
+                    <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Estado</span>
+                    <div class="mt-2">
+                        <x-status-pill :label="$subtask->status->name" :tone="$subtask->status->slug" />
+                    </div>
+                </div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Prioridad</span><p class="mt-2 text-white">{{ $subtask->priority->name }}</p></div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Vencimiento</span><p class="mt-2 text-white">{{ optional($subtask->due_date)->format('d/m/Y') ?: 'Sin fecha' }}</p></div>
             </div>
@@ -26,13 +31,12 @@
                     @method('PATCH')
                     <div>
                         <label class="app-label" for="subtask_status_id">Actualizar estado</label>
-                        <select id="subtask_status_id" name="task_status_id" class="app-input">
+                        <select id="subtask_status_id" name="task_status_id" class="app-input" onchange="this.form.requestSubmit()">
                             @foreach (\App\Models\TaskStatus::orderBy('name')->get() as $status)
                                 <option value="{{ $status->id }}" @selected($subtask->task_status_id === $status->id)>{{ ucfirst($status->name) }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <button class="app-button" type="submit">Guardar estado</button>
                 </form>
             @endcan
         </section>

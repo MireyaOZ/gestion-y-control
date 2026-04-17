@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold text-white">Tareas</h2>
-                <p class="text-sm text-slate-400">Listado de tareas con asignaciones y control de estado.</p>
+                <p class="text-sm  text-white/80">Listado de tareas con asignaciones y control de estado.</p>
             </div>
             @can('tasks.create')
                 <a href="{{ route('tasks.create') }}" class="app-button-light">Nueva tarea</a>
@@ -25,7 +25,7 @@
                             <p class="mt-1 text-sm text-slate-400">{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha de vencimiento' }}</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <x-status-pill :label="$task->status->name" />
+                            <x-status-pill :label="$task->status->name" :tone="$task->status->slug" />
                             <x-status-pill :label="$task->priority->name" />
                         </div>
                     </div>

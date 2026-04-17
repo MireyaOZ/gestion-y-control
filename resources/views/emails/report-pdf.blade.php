@@ -20,7 +20,9 @@
     <div class="meta">
         <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y H:i') }}</p>
         <p><strong>Área filtrada:</strong> {{ $areaLabel }}</p>
-        <p><strong>Área dependiente:</strong> {{ $parentAreaLabel }}</p>
+        <p><strong>Área superior:</strong> {{ $parentAreaLabel }}</p>
+        <p><strong>Tipo de movimiento:</strong> {{ $movementTypeLabel }}</p>
+        <p><strong>Fecha filtrada:</strong> {{ $dateLabel === 'Todas las fechas' ? $dateLabel : $dateLabel }}</p>
         @if ($search !== '')
             <p><strong>Búsqueda aplicada:</strong> {{ $search }}</p>
         @endif

@@ -47,6 +47,6 @@
 </div>
 
 <div class="mt-6 flex items-center gap-3">
-    <button class="app-button" type="submit">Guardar</button>
+    <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar</button>
     <a href="{{ route('tasks.index') }}" class="app-button-secondary">Cancelar</a>
 </div>

@@ -26,7 +26,7 @@
                                 <p class="font-medium text-white">{{ $task->title }}</p>
                                 <p class="text-sm text-slate-400">{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha de vencimiento' }}</p>
                             </div>
-                            <x-status-pill :label="$task->status->name" />
+                            <x-status-pill :label="$task->status->name" :tone="$task->status->slug" />
                         </div>
                     </a>
                 @empty

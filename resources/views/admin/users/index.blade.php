@@ -29,7 +29,7 @@
                     @foreach ($users as $user)
                         <tr class="border-t border-white/10">
                             <td class="px-4 py-3 text-slate-100">{{ $user->name }}<div class="text-xs text-slate-400">{{ $user->email }}</div></td>
-                            <td class="px-4 py-3 text-slate-300">{{ $user->roles->pluck('name')->join(', ') }}</td>
+                            <td class="px-4 py-3 text-slate-300">{{ $user->roles->pluck('name')->map(fn ($roleName) => \App\Support\PermissionCatalog::roleLabel($roleName))->join(', ') }}</td>
                             <td class="px-4 py-3 text-slate-300">{{ $user->is_active ? 'Activo' : 'Inactivo' }}</td>
                             <td class="px-4 py-3 text-right">
                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-emerald-300">Editar</a>

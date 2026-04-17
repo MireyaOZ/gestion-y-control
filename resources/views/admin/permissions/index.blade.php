@@ -14,7 +14,10 @@
             <tbody>
                 @foreach ($permissions as $permission)
                     <tr class="border-t border-white/10">
-                        <td class="px-4 py-3 text-slate-100">{{ $permission->name }}</td>
+                        <td class="px-4 py-3 text-slate-100">
+                            <div>{{ \App\Support\PermissionCatalog::permissionLabel($permission->name) }}</div>
+                            <div class="text-xs text-slate-400">{{ $permission->name }}</div>
+                        </td>
                         <td class="px-4 py-3 text-right"><a href="{{ route('admin.permissions.edit', $permission) }}" class="text-emerald-300">Editar</a></td>
                     </tr>
                 @endforeach

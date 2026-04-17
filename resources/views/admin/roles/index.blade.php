@@ -14,8 +14,11 @@
             <tbody>
                 @foreach ($roles as $role)
                     <tr class="border-t border-white/10">
-                        <td class="px-4 py-3 text-slate-100">{{ $role->name }}</td>
-                        <td class="px-4 py-3 text-slate-300">{{ $role->permissions->pluck('name')->join(', ') }}</td>
+                        <td class="px-4 py-3 text-slate-100">
+                            <div>{{ \App\Support\PermissionCatalog::roleLabel($role->name) }}</div>
+                            <div class="text-xs text-slate-400">{{ $role->name }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-300">{{ $role->permissions->pluck('name')->map(fn ($permissionName) => \App\Support\PermissionCatalog::permissionLabel($permissionName))->join(', ') }}</td>
                         <td class="px-4 py-3 text-right"><a href="{{ route('admin.roles.edit', $role) }}" class="text-emerald-300">Editar</a></td>
                     </tr>
                 @endforeach
