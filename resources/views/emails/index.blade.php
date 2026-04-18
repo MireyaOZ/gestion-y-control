@@ -47,9 +47,8 @@
                 </div>
             </div>
 
-            <div x-show="showFilters" x-transition class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
+            <div x-show="showFilters" x-transition class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div class="grid gap-5 xl:grid-cols-3 2xl:grid-cols-4">
                         <div>
                             <label for="area_id" class="app-label">Buscar por área</label>
                             <select id="area_id" name="area_id" class="app-input">
@@ -123,9 +122,8 @@
                                 Úsala junto con "Fecha desde" para buscar por un rango completo.
                             </p>
                         </div>
-                    </div>
 
-                    <div class="flex gap-3 pt-2">
+                    <div class="flex items-end gap-3 xl:col-span-3 2xl:col-span-4">
                         <a href="{{ route('emails.index') }}" class="app-button-secondary">Limpiar</a>
                     </div>
                 </div>
