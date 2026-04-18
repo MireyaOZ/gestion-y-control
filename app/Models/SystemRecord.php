@@ -5,14 +5,17 @@ namespace App\Models;
 use App\Models\Concerns\HasResources;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SystemRecord extends Model
 {
     use HasResources;
+    use SoftDeletes;
 
     protected $table = 'systems';
 
     protected $fillable = [
+        'request_date',
         'name',
         'trello_url',
         'system_status_id',
@@ -26,6 +29,7 @@ class SystemRecord extends Model
     protected function casts(): array
     {
         return [
+            'request_date' => 'date',
             'pending_errors' => 'integer',
             'errors_in_progress' => 'integer',
             'in_review' => 'integer',

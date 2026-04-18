@@ -22,7 +22,7 @@ class EmailRequestController extends Controller
     {
         abort_unless($request->user()->can('emails.view'), 403);
 
-        [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedDateFrom, $selectedDateTo, $dateLabel, $areaOptions] = $this->emailsFilterContext($request);
+        [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedStatus, $statusLabel, $selectedDateFrom, $selectedDateTo, $dateLabel, $selectedRequestDate, $requestDateLabel, $selectedRequestYear, $requestYearLabel, $areaOptions] = $this->emailsFilterContext($request);
 
         $emailRequests = $this->buildFilteredEmailRequestsQuery($request, $cargos)
             ->latest()
@@ -40,9 +40,15 @@ class EmailRequestController extends Controller
             'selectedArea',
             'selectedMovementTypeId',
             'selectedMovementType',
+            'selectedStatus',
+            'statusLabel',
             'selectedDateFrom',
             'selectedDateTo',
             'dateLabel',
+            'selectedRequestDate',
+            'requestDateLabel',
+            'selectedRequestYear',
+            'requestYearLabel',
             'areaOptions'
         ));
     }
@@ -51,7 +57,7 @@ class EmailRequestController extends Controller
     {
         abort_unless($request->user()->can('emails.view'), 403);
 
-        [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedDateFrom, $selectedDateTo, $dateLabel] = $this->emailsFilterContext($request);
+        [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedStatus, $statusLabel, $selectedDateFrom, $selectedDateTo, $dateLabel, $selectedRequestDate, $requestDateLabel, $selectedRequestYear, $requestYearLabel] = $this->emailsFilterContext($request);
 
         $emailRequests = $this->buildFilteredEmailRequestsQuery($request, $cargos)
             ->latest()
@@ -65,7 +71,7 @@ class EmailRequestController extends Controller
         $filenameBase = 'reporte-correos-'.$generatedAt->format('Ymd-His');
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('emails.report-pdf', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'dateLabel', 'search'))
+            $pdf = Pdf::loadView('emails.report-pdf', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedStatus', 'statusLabel', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))
                 ->setPaper('a4', 'landscape');
 
             return $pdf->download($filenameBase.'.pdf');
@@ -73,7 +79,35 @@ class EmailRequestController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'dateLabel', 'search'))->render();
+        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedStatus', 'statusLabel', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))->render();
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    public function historyReport(Request $request, EmailRequest $emailRequest, string $format): Response
+    {
+        abort_unless($request->user()->can('emails.view'), 403);
+
+        $emailRequest->loadMissing(['cargo', 'movementType', 'changeLogs.author']);
+
+        $generatedAt = now();
+        $reportTitle = 'Reporte de historial de correo';
+        $filenameBase = 'historial-correo-'.str($emailRequest->name)->slug()->toString().'-'.$generatedAt->format('Ymd-His');
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('emails.history-report-pdf', compact('emailRequest', 'generatedAt', 'reportTitle'))
+                ->setPaper('a4', 'landscape');
+
+            return $pdf->download($filenameBase.'.pdf');
+        }
+
+        abort_unless($format === 'excel', 404);
+
+        $content = view('emails.history-report-excel', compact('emailRequest', 'generatedAt', 'reportTitle'))->render();
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
@@ -89,6 +123,7 @@ class EmailRequestController extends Controller
         $data = $this->validatedData($request);
 
         $emailRequest = EmailRequest::query()->create([
+            'request_date' => $data['request_date'],
             'name' => $data['name'],
             'email' => $data['email'],
             'email_cargo_id' => $data['email_cargo_id'],
@@ -98,14 +133,15 @@ class EmailRequestController extends Controller
 
         $this->syncLink($emailRequest, $data['link'] ?? null, $request->user()->id);
 
-        $content = "<p>Solicitud de correo registrada por {$request->user()->name}.</p>"
-            ."<p><strong>Nombre:</strong> {$emailRequest->name}</p>"
-            ."<p><strong>Correo:</strong> {$emailRequest->email}</p>"
-            ."<p><strong>Cargo:</strong> {$emailRequest->cargo->name}</p>"
-            ."<p><strong>Tipo de movimiento:</strong> {$emailRequest->movementType->name}</p>";
+        $content = '<p>Solicitud de correo registrada por '.e($request->user()->name).'.</p>'
+            .'<p><strong>Fecha de solicitud:</strong> '.e($emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha').'</p>'
+            .'<p><strong>Nombre:</strong> '.e($emailRequest->name).'</p>'
+            .'<p><strong>Correo:</strong> '.e($emailRequest->email).'</p>'
+            .'<p><strong>Cargo:</strong> '.e($emailRequest->cargo->name).'</p>'
+            .'<p><strong>Tipo de movimiento:</strong> '.e($emailRequest->movementType->name).'</p>';
 
         if (! empty($data['link'])) {
-            $content .= "<p><strong>Link:</strong> {$data['link']}</p>";
+            $content .= '<p><strong>Link:</strong> '.$this->renderHistoryUrl($data['link']).'</p>';
         }
 
         ChangeLogger::log($emailRequest, 'created', $content);
@@ -119,6 +155,7 @@ class EmailRequestController extends Controller
 
         $data = $this->validatedData($request);
 
+        $originalRequestDate = $emailRequest->request_date?->format('Y-m-d');
         $originalName = $emailRequest->name;
         $originalEmail = $emailRequest->email;
         $originalCargo = $emailRequest->cargo?->name;
@@ -126,6 +163,7 @@ class EmailRequestController extends Controller
         $originalLink = $emailRequest->links->first()?->url;
 
         $emailRequest->update([
+            'request_date' => $data['request_date'],
             'name' => $data['name'],
             'email' => $data['email'],
             'email_cargo_id' => $data['email_cargo_id'],
@@ -138,12 +176,17 @@ class EmailRequestController extends Controller
 
         $changes = [];
 
+        $updatedRequestDate = $emailRequest->request_date?->format('Y-m-d');
+        if ($originalRequestDate !== $updatedRequestDate) {
+            $changes[] = '<p><strong>Fecha de solicitud:</strong> '.e($this->formatRequestDate($originalRequestDate)).' '.self::CHANGE_ARROW.' '.e($this->formatRequestDate($updatedRequestDate)).'</p>';
+        }
+
         if ($originalName !== $emailRequest->name) {
-            $changes[] = "<p><strong>Nombre:</strong> {$originalName} ".self::CHANGE_ARROW." {$emailRequest->name}</p>";
+            $changes[] = '<p><strong>Nombre:</strong> '.e($originalName).' '.self::CHANGE_ARROW.' '.e($emailRequest->name).'</p>';
         }
 
         if ($originalEmail !== $emailRequest->email) {
-            $changes[] = "<p><strong>Correo:</strong> {$originalEmail} ".self::CHANGE_ARROW." {$emailRequest->email}</p>";
+            $changes[] = '<p><strong>Correo:</strong> '.e($originalEmail).' '.self::CHANGE_ARROW.' '.e($emailRequest->email).'</p>';
         }
 
         if ($originalCargo !== $emailRequest->cargo?->name) {
@@ -151,12 +194,12 @@ class EmailRequestController extends Controller
         }
 
         if ($originalMovementType !== $emailRequest->movementType->name) {
-            $changes[] = "<p><strong>Tipo de movimiento:</strong> {$originalMovementType} ".self::CHANGE_ARROW." {$emailRequest->movementType->name}</p>";
+            $changes[] = '<p><strong>Tipo de movimiento:</strong> '.e($originalMovementType).' '.self::CHANGE_ARROW.' '.e($emailRequest->movementType->name).'</p>';
         }
 
         $newLink = $emailRequest->links->first()?->url;
         if ($originalLink !== $newLink) {
-            $changes[] = '<p><strong>Link:</strong> '.($originalLink ?: 'Sin link').' '.self::CHANGE_ARROW.' '.($newLink ?: 'Sin link').'</p>';
+            $changes[] = '<p><strong>Link:</strong> '.$this->renderHistoryUrl($originalLink).' '.self::CHANGE_ARROW.' '.$this->renderHistoryUrl($newLink).'</p>';
         }
 
         if ($changes !== []) {
@@ -178,16 +221,13 @@ class EmailRequestController extends Controller
             $emailRequest,
             'deleted',
             "<p>Solicitud de correo eliminada por {$request->user()->name}.</p>"
+            ."<p><strong>Fecha de solicitud:</strong> ".e($emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha')."</p>"
             ."<p><strong>Nombre:</strong> {$emailRequest->name}</p>"
             ."<p><strong>Correo:</strong> {$emailRequest->email}</p>"
             ."<p><strong>Cargo:</strong> ".($emailRequest->cargo?->name ?: 'Sin cargo')."</p>"
             ."<p><strong>Tipo de movimiento:</strong> {$emailRequest->movementType->name}</p>"
         );
 
-        $emailRequest->links()->delete();
-        $emailRequest->comments()->delete();
-        $emailRequest->attachments()->delete();
-        $emailRequest->changeLogs()->delete();
         $emailRequest->delete();
 
         return redirect()->route('emails.index')->with('status', 'Solicitud de correo eliminada correctamente.');
@@ -196,6 +236,7 @@ class EmailRequestController extends Controller
     protected function validatedData(Request $request): array
     {
         return $request->validate([
+            'request_date' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'email_cargo_id' => ['required', 'exists:email_cargos,id'],
@@ -232,11 +273,33 @@ class EmailRequestController extends Controller
         ]);
     }
 
+    protected function renderHistoryUrl(?string $url): string
+    {
+        if (blank($url)) {
+            return 'Sin link';
+        }
+
+        return '<a href="'.e($url).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir link</a>'
+            .' <span style="color:#64748b;word-break:break-all;">('.e($url).')</span>';
+    }
+
+    protected function formatRequestDate(?string $date): string
+    {
+        if (blank($date)) {
+            return 'Sin fecha';
+        }
+
+        return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
+    }
+
     protected function emailsFilterContext(Request $request): array
     {
         $search = (string) $request->string('search');
         $selectedAreaId = $request->integer('area_id') ?: null;
         $selectedMovementTypeId = $request->integer('movement_type_id') ?: null;
+        $selectedStatus = trim($request->string('status')->toString());
+        $selectedRequestDate = trim($request->string('request_date')->toString());
+        $selectedRequestYear = trim($request->string('request_year')->toString());
         [$selectedDateFrom, $selectedDateTo] = $this->normalizedDateRange(
             $request->string('created_at_from')->toString(),
             $request->string('created_at_to')->toString(),
@@ -247,10 +310,17 @@ class EmailRequestController extends Controller
         $selectedMovementType = $selectedMovementTypeId
             ? EmailMovementType::query()->find($selectedMovementTypeId)
             : null;
+        $statusLabel = match ($selectedStatus) {
+            'active' => 'Activo',
+            'inactive' => 'Inactivo',
+            default => 'Todos los estatus',
+        };
         $dateLabel = $this->buildDateRangeLabel($selectedDateFrom, $selectedDateTo);
+        $requestDateLabel = $selectedRequestDate !== '' ? $this->formatDateLabel($selectedRequestDate) : 'Todas las fechas de solicitud';
+        $requestYearLabel = $selectedRequestYear !== '' ? $selectedRequestYear : 'Todos los años de solicitud';
         $areaOptions = $this->buildAreaOptions($cargos);
 
-        return [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedDateFrom, $selectedDateTo, $dateLabel, $areaOptions];
+        return [$cargos, $search, $selectedAreaId, $selectedArea, $selectedMovementTypeId, $selectedMovementType, $selectedStatus, $statusLabel, $selectedDateFrom, $selectedDateTo, $dateLabel, $selectedRequestDate, $requestDateLabel, $selectedRequestYear, $requestYearLabel, $areaOptions];
     }
 
     protected function buildFilteredEmailRequestsQuery(Request $request, Collection $cargos): Builder
@@ -258,6 +328,9 @@ class EmailRequestController extends Controller
         $search = (string) $request->string('search');
         $selectedAreaId = $request->integer('area_id') ?: null;
         $selectedMovementTypeId = $request->integer('movement_type_id') ?: null;
+        $selectedStatus = trim($request->string('status')->toString());
+        $selectedRequestDate = trim($request->string('request_date')->toString());
+        $selectedRequestYear = trim($request->string('request_year')->toString());
         [$selectedDateFrom, $selectedDateTo] = $this->normalizedDateRange(
             $request->string('created_at_from')->toString(),
             $request->string('created_at_to')->toString(),
@@ -270,6 +343,10 @@ class EmailRequestController extends Controller
             ->with(['cargo', 'movementType', 'links', 'changeLogs.author'])
             ->when($selectedArea && $areaIds !== [], fn ($query) => $query->whereIn('email_cargo_id', $areaIds))
             ->when($selectedMovementTypeId, fn ($query) => $query->where('email_movement_type_id', $selectedMovementTypeId))
+            ->when($selectedStatus === 'active', fn ($query) => $query->whereHas('movementType', fn ($movementTypeQuery) => $movementTypeQuery->whereIn('slug', ['alta', 'cambio-de-contrasena'])))
+            ->when($selectedStatus === 'inactive', fn ($query) => $query->whereHas('movementType', fn ($movementTypeQuery) => $movementTypeQuery->where('slug', 'baja')))
+            ->when($selectedRequestDate !== '', fn ($query) => $query->whereDate('request_date', $selectedRequestDate))
+            ->when($selectedRequestYear !== '', fn ($query) => $query->whereYear('request_date', (int) $selectedRequestYear))
             ->when($selectedDateFrom !== '', fn ($query) => $query->whereDate('created_at', '>=', $selectedDateFrom))
             ->when($selectedDateTo !== '', fn ($query) => $query->whereDate('created_at', '<=', $selectedDateTo))
             ->when($search !== '', function ($query) use ($search) {

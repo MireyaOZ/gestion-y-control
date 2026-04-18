@@ -14,6 +14,7 @@
     <div>
         <label class="app-label" for="task_status_id">Estado</label>
         <select id="task_status_id" name="task_status_id" class="app-input" required>
+            <option value="" @selected(old('task_status_id', $task->task_status_id ?? '') === '')>Seleccione</option>
             @foreach ($statuses as $status)
                 <option value="{{ $status->id }}" @selected(old('task_status_id', $task->task_status_id ?? '') == $status->id)>{{ ucfirst($status->name) }}</option>
             @endforeach
@@ -23,6 +24,7 @@
     <div>
         <label class="app-label" for="priority_id">Prioridad</label>
         <select id="priority_id" name="priority_id" class="app-input" required>
+            <option value="" @selected(old('priority_id', $task->priority_id ?? '') === '')>Seleccione</option>
             @foreach ($priorities as $priority)
                 <option value="{{ $priority->id }}" @selected(old('priority_id', $task->priority_id ?? '') == $priority->id)>{{ ucfirst($priority->name) }}</option>
             @endforeach

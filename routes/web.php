@@ -23,11 +23,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/correos', [EmailRequestController::class, 'index'])->name('emails.index');
     Route::get('/correos/reporte/{format}', [EmailRequestController::class, 'report'])->name('emails.report');
+    Route::get('/correos/{emailRequest}/historial/reporte/{format}', [EmailRequestController::class, 'historyReport'])->name('emails.history.report');
     Route::post('/correos', [EmailRequestController::class, 'store'])->name('emails.store');
     Route::patch('/correos/{emailRequest}', [EmailRequestController::class, 'update'])->name('emails.update');
     Route::delete('/correos/{emailRequest}', [EmailRequestController::class, 'destroy'])->name('emails.destroy');
     Route::get('/sistemas', [SystemRecordController::class, 'index'])->name('systems.index');
     Route::get('/sistemas/reporte/{format}', [SystemRecordController::class, 'report'])->name('systems.report');
+    Route::get('/sistemas/{system}/historial/reporte/{format}', [SystemRecordController::class, 'historyReport'])->name('systems.history.report');
     Route::post('/sistemas', [SystemRecordController::class, 'store'])->name('systems.store');
     Route::patch('/sistemas/{system}', [SystemRecordController::class, 'update'])->name('systems.update');
     Route::delete('/sistemas/{system}', [SystemRecordController::class, 'destroy'])->name('systems.destroy');

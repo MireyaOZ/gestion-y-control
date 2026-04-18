@@ -1,5 +1,7 @@
 @csrf
 
+<input type="hidden" name="task_id" value="{{ old('task_id', $subtask->task_id ?? $selectedTaskId ?? '') }}">
+
 <div class="grid gap-6 lg:grid-cols-2">
     <div>
         <label class="app-label" for="title">Título</label>
@@ -12,17 +14,9 @@
     </div>
 
     <div>
-        <label class="app-label" for="task_id">Tarea padre</label>
-        <select id="task_id" name="task_id" class="app-input" required>
-            @foreach ($tasks as $taskOption)
-                <option value="{{ $taskOption->id }}" @selected(old('task_id', $subtask->task_id ?? $selectedTaskId ?? '') == $taskOption->id)>{{ $taskOption->title }}</option>
-            @endforeach
-        </select>
-    </div>
-
-    <div>
         <label class="app-label" for="task_status_id">Estado</label>
         <select id="task_status_id" name="task_status_id" class="app-input" required>
+            <option value="" @selected(old('task_status_id', $subtask->task_status_id ?? '') === '')>Seleccione</option>
             @foreach ($statuses as $status)
                 <option value="{{ $status->id }}" @selected(old('task_status_id', $subtask->task_status_id ?? '') == $status->id)>{{ ucfirst($status->name) }}</option>
             @endforeach
@@ -32,6 +26,7 @@
     <div>
         <label class="app-label" for="priority_id">Prioridad</label>
         <select id="priority_id" name="priority_id" class="app-input" required>
+            <option value="" @selected(old('priority_id', $subtask->priority_id ?? '') === '')>Seleccione</option>
             @foreach ($priorities as $priority)
                 <option value="{{ $priority->id }}" @selected(old('priority_id', $subtask->priority_id ?? '') == $priority->id)>{{ ucfirst($priority->name) }}</option>
             @endforeach

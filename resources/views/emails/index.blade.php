@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <form method="GET" class="app-card p-4" x-data="{ showFilters: @js(filled($selectedAreaId) || filled($selectedMovementTypeId) || filled($selectedDateFrom) || filled($selectedDateTo)) }">
+        <form method="GET" class="app-card p-4" x-data="{ showFilters: @js(filled($selectedAreaId) || filled($selectedMovementTypeId) || filled($selectedStatus) || filled($selectedDateFrom) || filled($selectedDateTo) || filled($selectedRequestDate) || filled($selectedRequestYear)) }">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div class="flex-1">
                     <input
@@ -49,7 +49,7 @@
 
             <div x-show="showFilters" x-transition class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
-                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-7">
                         <div>
                             <label for="area_id" class="app-label">Buscar por área</label>
                             <select id="area_id" name="area_id" class="app-input">
@@ -81,6 +81,34 @@
                         </div>
 
                         <div>
+                            <label for="status" class="app-label">Estatus</label>
+                            <select id="status" name="status" class="app-input">
+                                <option value="">Todos los estatus</option>
+                                <option value="active" @selected($selectedStatus === 'active')>Activo</option>
+                                <option value="inactive" @selected($selectedStatus === 'inactive')>Inactivo</option>
+                            </select>
+                            <p class="mt-2 text-xs text-slate-500">
+                                Activo corresponde a Alta y Cambio de contraseña; Inactivo corresponde a Baja.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label for="request_date" class="app-label">Fecha de solicitud</label>
+                            <input id="request_date" name="request_date" type="date" class="app-input" value="{{ $selectedRequestDate }}">
+                            <p class="mt-2 text-xs text-slate-500">
+                                Busca los registros usando la fecha capturada en el modal al crear o editar el correo.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label for="request_year" class="app-label">Año de solicitud</label>
+                            <input id="request_year" name="request_year" type="number" min="2000" max="2100" class="app-input" value="{{ $selectedRequestYear }}" placeholder="2026">
+                            <p class="mt-2 text-xs text-slate-500">
+                                Filtra por el año de la fecha de solicitud capturada en el registro.
+                            </p>
+                        </div>
+
+                        <div>
                             <label for="created_at_from" class="app-label">Fecha desde</label>
                             <input id="created_at_from" name="created_at_from" type="date" class="app-input" value="{{ $selectedDateFrom }}">
                             <p class="mt-2 text-xs text-slate-500">
@@ -103,13 +131,22 @@
                 </div>
             </div>
 
-            @if ($selectedArea || $selectedMovementType || $selectedDateFrom || $selectedDateTo || $search !== '')
+            @if ($selectedArea || $selectedMovementType || $selectedStatus || $selectedDateFrom || $selectedDateTo || $selectedRequestDate || $selectedRequestYear || $search !== '')
                 <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
                     @if ($selectedArea)
                         <span>Área: <span class="font-semibold text-slate-900">{{ $selectedArea->name }}</span></span>
                     @endif
                     @if ($selectedMovementType)
                         <span>Movimiento: <span class="font-semibold text-slate-900">{{ $selectedMovementType->name }}</span></span>
+                    @endif
+                    @if ($selectedStatus)
+                        <span>Estatus: <span class="font-semibold text-slate-900">{{ $statusLabel }}</span></span>
+                    @endif
+                    @if ($selectedRequestDate)
+                        <span>Fecha de solicitud: <span class="font-semibold text-slate-900">{{ $requestDateLabel }}</span></span>
+                    @endif
+                    @if ($selectedRequestYear)
+                        <span>Año de solicitud: <span class="font-semibold text-slate-900">{{ $requestYearLabel }}</span></span>
                     @endif
                     @if ($selectedDateFrom || $selectedDateTo)
                         <span>Fecha: <span class="font-semibold text-slate-900">{{ $dateLabel }}</span></span>
@@ -123,12 +160,12 @@
 
         <div class="space-y-3">
             <div class="flex justify-start gap-3">
-                <a href="{{ route('emails.report', ['format' => 'excel', 'search' => $search, 'area_id' => $selectedAreaId, 'movement_type_id' => $selectedMovementTypeId, 'created_at_from' => $selectedDateFrom, 'created_at_to' => $selectedDateTo]) }}" class="app-button-secondary">Descargar Excel</a>
-                <a href="{{ route('emails.report', ['format' => 'pdf', 'search' => $search, 'area_id' => $selectedAreaId, 'movement_type_id' => $selectedMovementTypeId, 'created_at_from' => $selectedDateFrom, 'created_at_to' => $selectedDateTo]) }}" class="app-button-secondary">Descargar PDF</a>
+                <a href="{{ route('emails.report', ['format' => 'excel', 'search' => $search, 'area_id' => $selectedAreaId, 'movement_type_id' => $selectedMovementTypeId, 'status' => $selectedStatus, 'request_date' => $selectedRequestDate, 'request_year' => $selectedRequestYear, 'created_at_from' => $selectedDateFrom, 'created_at_to' => $selectedDateTo]) }}" class="app-button-secondary">Descargar Excel</a>
+                <a href="{{ route('emails.report', ['format' => 'pdf', 'search' => $search, 'area_id' => $selectedAreaId, 'movement_type_id' => $selectedMovementTypeId, 'status' => $selectedStatus, 'request_date' => $selectedRequestDate, 'request_year' => $selectedRequestYear, 'created_at_from' => $selectedDateFrom, 'created_at_to' => $selectedDateTo]) }}" class="app-button-secondary">Descargar PDF</a>
             </div>
 
-            <div class="app-card overflow-hidden">
-            <table class="min-w-full text-sm">
+            <div class="app-card overflow-x-auto overflow-y-hidden">
+            <table class="min-w-[1280px] text-sm">
                 <thead class="bg-slate-50 text-left text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Nombre</th>
@@ -136,6 +173,8 @@
                         <th class="px-4 py-3">Cargo</th>
                         <th class="px-4 py-3">Superior jerárquico</th>
                         <th class="px-4 py-3">Tipo de movimiento</th>
+                        <th class="px-4 py-3">Estatus</th>
+                        <th class="px-4 py-3">Fecha de solicitud</th>
                         <th class="px-4 py-3">Fecha de creación</th>
                         <th class="px-4 py-3">Link de interés</th>
                         <th class="px-4 py-3">Historial de cambios</th>
@@ -150,6 +189,10 @@
                             <td class="px-4 py-3 text-slate-700">{{ $emailRequest->cargo?->name ?? 'Sin cargo' }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $emailRequest->cargo?->parent_name ?? 'Sin area dependiente' }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $emailRequest->movementType->name }}</td>
+                            <td class="px-4 py-3 text-slate-700">
+                                <x-status-pill :label="$emailRequest->operational_status" :tone="$emailRequest->operational_status_tone" />
+                            </td>
+                            <td class="px-4 py-3 text-slate-600">{{ $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $emailRequest->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-4 py-3 text-slate-700">
                                 @if ($emailRequest->links->isNotEmpty())
@@ -196,7 +239,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-4 py-6 text-center text-slate-500">No hay solicitudes de correos registradas.</td>
+                            <td colspan="11" class="px-4 py-6 text-center text-slate-500">No hay solicitudes de correos registradas.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -221,6 +264,11 @@
                         <form method="POST" action="{{ route('emails.update', $emailRequest) }}" class="mt-6 space-y-4">
                             @csrf
                             @method('PATCH')
+                            <div>
+                                <label for="edit-request-date-{{ $emailRequest->id }}" class="app-label">Fecha de solicitud</label>
+                                <input id="edit-request-date-{{ $emailRequest->id }}" name="request_date" type="date" class="app-input" value="{{ old('request_date', $emailRequest->request_date?->format('Y-m-d')) }}" required>
+                            </div>
+
                             <div>
                                 <label for="edit-name-{{ $emailRequest->id }}" class="app-label">Nombre</label>
                                 <input id="edit-name-{{ $emailRequest->id }}" name="name" type="text" class="app-input" value="{{ old('name', $emailRequest->name) }}" required>
@@ -279,6 +327,11 @@
                         <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'email-history-{{ $emailRequest->id }}')">Cerrar</button>
                     </div>
 
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <a href="{{ route('emails.history.report', ['emailRequest' => $emailRequest, 'format' => 'excel']) }}" class="app-button-secondary">Descargar historial Excel</a>
+                        <a href="{{ route('emails.history.report', ['emailRequest' => $emailRequest, 'format' => 'pdf']) }}" class="app-button-secondary">Descargar historial PDF</a>
+                    </div>
+
                     <div class="mt-6 max-h-[70vh] space-y-3 overflow-y-auto pr-2">
                         @forelse ($emailRequest->changeLogs as $log)
                             <div class="rounded-2xl border border-slate-200 p-4">
@@ -307,6 +360,11 @@
 
                 <form method="POST" action="{{ route('emails.store') }}" class="mt-6 space-y-4">
                     @csrf
+                    <div>
+                        <label for="request_date" class="app-label">Fecha de solicitud</label>
+                        <input id="request_date" name="request_date" type="date" class="app-input" value="{{ old('request_date') }}" required>
+                    </div>
+
                     <div>
                         <label for="name" class="app-label">Nombre</label>
                         <input id="name" name="name" type="text" class="app-input" value="{{ old('name') }}" required>

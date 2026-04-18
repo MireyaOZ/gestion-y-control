@@ -12,7 +12,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 class SystemRecordController extends Controller
 {
@@ -68,6 +67,34 @@ class SystemRecordController extends Controller
         ]);
     }
 
+    public function historyReport(Request $request, SystemRecord $system, string $format): Response
+    {
+        abort_unless($request->user()->can('systems.view'), 403);
+
+        $system->loadMissing(['status', 'changeLogs.author']);
+
+        $generatedAt = now();
+        $reportTitle = 'Reporte de historial de sistema';
+        $filenameBase = 'historial-sistema-'.str($system->name)->slug()->toString().'-'.$generatedAt->format('Ymd-His');
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('systems.history-report-pdf', compact('system', 'generatedAt', 'reportTitle'))
+                ->setPaper('a4', 'landscape');
+
+            return $pdf->download($filenameBase.'.pdf');
+        }
+
+        abort_unless($format === 'excel', 404);
+
+        $content = view('systems.history-report-excel', compact('system', 'generatedAt', 'reportTitle'))->render();
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         abort_unless($request->user()->can('systems.create'), 403);
@@ -75,6 +102,7 @@ class SystemRecordController extends Controller
         $data = $this->validatedData($request);
 
         $system = SystemRecord::query()->create([
+            'request_date' => $data['request_date'],
             'name' => $data['name'],
             'trello_url' => $data['trello_url'] ?? null,
             'system_status_id' => $data['system_status_id'],
@@ -106,6 +134,7 @@ class SystemRecordController extends Controller
         abort_unless($request->user()->can('systems.update'), 403);
 
         $data = $this->validatedData($request);
+        $originalRequestDate = $system->request_date?->format('Y-m-d');
         $originalName = $system->name;
         $originalTrelloUrl = $system->trello_url;
         $originalStatusId = $system->system_status_id;
@@ -117,6 +146,7 @@ class SystemRecordController extends Controller
         $originalFinalized = $system->finalized;
 
         $system->update([
+            'request_date' => $data['request_date'],
             'name' => $data['name'],
             'trello_url' => $data['trello_url'] ?? null,
             'system_status_id' => $data['system_status_id'],
@@ -131,6 +161,11 @@ class SystemRecordController extends Controller
         $system->load(['status', 'links']);
 
         $changes = [];
+
+        $updatedRequestDate = $system->request_date?->format('Y-m-d');
+        if ($originalRequestDate !== $updatedRequestDate) {
+            $changes[] = '<p><strong>Fecha de solicitud:</strong> '.e($this->formatRequestDate($originalRequestDate)).' '.self::CHANGE_ARROW.' '.e($this->formatRequestDate($updatedRequestDate)).'</p>';
+        }
 
         if ($originalName !== $system->name) {
             $changes[] = '<p><strong>Nombre del sistema:</strong> '.e($originalName).' '.self::CHANGE_ARROW.' '.e($system->name).'</p>';
@@ -187,13 +222,6 @@ class SystemRecordController extends Controller
             )
         );
 
-        $system->links()->delete();
-        $system->comments()->delete();
-        foreach ($system->attachments as $attachment) {
-            Storage::disk($attachment->disk)->delete($attachment->path);
-            $attachment->delete();
-        }
-        $system->changeLogs()->delete();
         $system->delete();
 
         return redirect()->route('systems.index')->with('status', 'Sistema eliminado correctamente.');
@@ -202,6 +230,7 @@ class SystemRecordController extends Controller
     protected function validatedData(Request $request): array
     {
         $data = $request->validate([
+            'request_date' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
             'system_status_id' => ['required', 'exists:system_statuses,id'],
             'link' => ['nullable', 'url', 'max:2048'],
@@ -317,6 +346,7 @@ class SystemRecordController extends Controller
     protected function buildCreatedSystemLogContent(SystemRecord $system, string $authorName, array $uploadedAttachments): string
     {
         $content = '<p>Sistema registrado por '.e($authorName).'.</p>'
+            .'<p><strong>Fecha de solicitud:</strong> '.e($system->request_date?->format('d/m/Y') ?? 'Sin fecha').'</p>'
             .'<p><strong>Nombre del sistema:</strong> '.e($system->name).'</p>'
             .'<p><strong>Estatus:</strong> '.e($system->status?->display_name ?? 'Sin estatus').'</p>'
             .'<p><strong>Link:</strong> '.$this->renderHistoryUrl($system->links->first()?->url).'</p>'
@@ -334,6 +364,7 @@ class SystemRecordController extends Controller
     protected function buildDeletedSystemLogContent(SystemRecord $system, string $authorName): string
     {
         $content = '<p>Sistema eliminado por '.e($authorName).'.</p>'
+            .'<p><strong>Fecha de solicitud:</strong> '.e($system->request_date?->format('d/m/Y') ?? 'Sin fecha').'</p>'
             .'<p><strong>Nombre del sistema:</strong> '.e($system->name).'</p>'
             .'<p><strong>Estatus:</strong> '.e($system->status?->display_name ?? 'Sin estatus').'</p>'
             .'<p><strong>Link:</strong> '.$this->renderHistoryUrl($system->links->first()?->url).'</p>'
@@ -403,6 +434,15 @@ class SystemRecordController extends Controller
         }
 
         return '<a href="'.e($url).'" target="_blank" style="color:#960018;text-decoration:underline;">'.e($url).'</a>';
+    }
+
+    protected function formatRequestDate(?string $date): string
+    {
+        if (blank($date)) {
+            return 'Sin fecha';
+        }
+
+        return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
     }
 
     protected function wrapHistoryContent(?string $statusName, string $content): string

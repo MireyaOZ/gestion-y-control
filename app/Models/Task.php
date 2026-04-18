@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
     use HasResources;
+    use SoftDeletes;
 
     protected $fillable = [
         'title',
@@ -27,6 +29,33 @@ class Task extends Model
         return [
             'due_date' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Task $task): void {
+            $subtasks = $task->isForceDeleting()
+                ? $task->subtasks()->withTrashed()->get()
+                : $task->subtasks()->get();
+
+            foreach ($subtasks as $subtask) {
+                if ($task->isForceDeleting()) {
+                    $subtask->forceDelete();
+
+                    continue;
+                }
+
+                $subtask->delete();
+            }
+        });
+
+        static::restoring(function (Task $task): void {
+            foreach ($task->subtasks()->withTrashed()->get() as $subtask) {
+                if ($subtask->trashed()) {
+                    $subtask->restore();
+                }
+            }
+        });
     }
 
     public function status(): BelongsTo

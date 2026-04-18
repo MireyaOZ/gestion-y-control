@@ -19,18 +19,11 @@
 
     <div class="meta">
         <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y H:i') }}</p>
-        <p><strong>Área filtrada:</strong> {{ $areaLabel }}</p>
-        <p><strong>Área superior:</strong> {{ $parentAreaLabel }}</p>
-        <p><strong>Tipo de movimiento:</strong> {{ $movementTypeLabel }}</p>
-        <p><strong>Estatus filtrado:</strong> {{ $statusLabel }}</p>
-        <p><strong>Fecha de solicitud filtrada:</strong> {{ $requestDateLabel }}</p>
-        <p><strong>Año de solicitud filtrado:</strong> {{ $requestYearLabel }}</p>
-        <p><strong>Fecha filtrada:</strong> {{ $dateLabel === 'Todas las fechas' ? $dateLabel : $dateLabel }}</p>
-        @if ($search !== '')
-            <p><strong>Búsqueda aplicada:</strong> {{ $search }}</p>
-        @endif
+        <p><strong>Sistema:</strong> {{ $system->name }}</p>
+        <p><strong>Fecha de solicitud:</strong> {{ $system->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</p>
+        <p><strong>Estatus actual:</strong> {{ $system->status?->display_name ?? 'Sin estatus' }}</p>
     </div>
 
-    @include('emails.report-table', ['emailRequests' => $emailRequests])
+    @include('systems.history-report-table', ['system' => $system])
 </body>
 </html>

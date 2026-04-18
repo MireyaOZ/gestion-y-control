@@ -56,8 +56,9 @@ Alpine.data('searchMultiSelect', ({ endpoint, selected = [] }) => ({
     },
     add(item) {
         this.selected.push(item);
-        this.results = this.results.filter((result) => result.id !== item.id);
+        this.results = [];
         this.query = '';
+        this.open = false;
     },
     remove(id) {
         this.selected = this.selected.filter((item) => item.id !== id);

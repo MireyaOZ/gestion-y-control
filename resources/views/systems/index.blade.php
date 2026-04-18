@@ -52,6 +52,7 @@
                 <thead class="bg-slate-50 text-left text-slate-500">
                     <tr>
                         <th class="px-4 py-3">Nombre del sistema</th>
+                        <th class="px-4 py-3">Fecha de solicitud</th>
                         <th class="px-4 py-3">Fecha de creación</th>
                         <th class="px-4 py-3">Link de interés</th>
                         <th class="px-4 py-3">Estatus</th>
@@ -64,6 +65,7 @@
                     @forelse ($systems as $system)
                         <tr class="border-t border-slate-200">
                             <td class="px-4 py-3 font-medium text-slate-900">{{ $system->name }}</td>
+                            <td class="px-4 py-3 text-slate-600">{{ $system->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
                             <td class="px-4 py-3 text-slate-600">{{ $system->created_at->format('d/m/Y H:i') }}</td>
                             <td class="px-4 py-3 text-slate-700">
                                 @if ($system->links->isNotEmpty())
@@ -144,6 +146,11 @@
                         $historyByStatus = $system->changeLogs->groupBy(fn ($log) => $log->status_group);
                     @endphp
 
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <a href="{{ route('systems.history.report', ['system' => $system, 'format' => 'excel']) }}" class="app-button-secondary">Descargar historial Excel</a>
+                        <a href="{{ route('systems.history.report', ['system' => $system, 'format' => 'pdf']) }}" class="app-button-secondary">Descargar historial PDF</a>
+                    </div>
+
                     <div class="mt-6 max-h-[70vh] space-y-4 overflow-y-auto pr-2">
                         @forelse ($historyByStatus as $statusName => $logs)
                             <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -158,7 +165,7 @@
                                     @foreach ($logs as $log)
                                         <article class="rounded-2xl border border-slate-200 bg-white p-4">
                                             <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->localized_action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
-                                            <div class="prose max-w-none text-slate-700">{!! preg_replace('/<div data-status-group="[^"]+">|<\/div>$/', '', $log->content, 1) !!}</div>
+                                            <div class="prose max-w-none text-slate-700">{!! $log->rendered_content !!}</div>
                                         </article>
                                     @endforeach
                                 </div>
@@ -184,6 +191,11 @@
                         <form method="POST" action="{{ route('systems.update', $system) }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data='{"selectedStatusId":"{{ (string) old('system_status_id', $system->system_status_id) }}","testingSlug":"en-pruebas","statusSlugs":@json($statuses->mapWithKeys(fn ($status) => [(string) $status->id => $status->slug]))}'>
                             @csrf
                             @method('PATCH')
+                            <div>
+                                <label for="edit-system-request-date-{{ $system->id }}" class="app-label">Fecha de solicitud</label>
+                                <input id="edit-system-request-date-{{ $system->id }}" name="request_date" type="date" class="app-input" value="{{ old('request_date', $system->request_date?->format('Y-m-d')) }}" required>
+                            </div>
+
                             <div>
                                 <label for="edit-system-name-{{ $system->id }}" class="app-label">Nombre del sistema</label>
                                 <input id="edit-system-name-{{ $system->id }}" name="name" type="text" class="app-input" value="{{ old('name', $system->name) }}" required>
@@ -259,6 +271,11 @@
 
                 <form method="POST" action="{{ route('systems.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data='{"selectedStatusId":"{{ (string) old('system_status_id') }}","testingSlug":"en-pruebas","statusSlugs":@json($statuses->mapWithKeys(fn ($status) => [(string) $status->id => $status->slug]))}'>
                     @csrf
+                    <div>
+                        <label for="system-request-date" class="app-label">Fecha de solicitud</label>
+                        <input id="system-request-date" name="request_date" type="date" class="app-input" value="{{ old('request_date') }}" required>
+                    </div>
+
                     <div>
                         <label for="system-name" class="app-label">Nombre del sistema</label>
                         <input id="system-name" name="name" type="text" class="app-input" value="{{ old('name') }}" required>

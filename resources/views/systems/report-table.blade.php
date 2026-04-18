@@ -3,6 +3,7 @@
         <tr>
             <th>No.</th>
             <th>Nombre del sistema</th>
+            <th>Fecha de solicitud</th>
             <th>Fecha de creación</th>
             <th>Estatus</th>
         </tr>
@@ -12,6 +13,7 @@
             <tr>
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $system->name }}</td>
+                <td>{{ $system->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
                 <td>{{ $system->created_at->format('d/m/Y H:i') }}</td>
                 <td>
                     {{ $system->status?->display_name ?? 'Sin estatus' }}
@@ -27,7 +29,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="4">No hay datos para el reporte.</td>
+                <td colspan="5">No hay datos para el reporte.</td>
             </tr>
         @endforelse
     </tbody>

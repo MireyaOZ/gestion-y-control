@@ -10,7 +10,6 @@ use App\Models\Task;
 use App\Services\ChangeLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class AttachmentController extends Controller
 {
@@ -66,7 +65,6 @@ class AttachmentController extends Controller
             );
         }
 
-        Storage::disk($attachment->disk)->delete($attachment->path);
         $attachment->delete();
 
         return back()->with('status', 'Adjunto eliminado.');
