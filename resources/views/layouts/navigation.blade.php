@@ -19,11 +19,6 @@
                             Tareas
                         </x-nav-link>
                     @endcan
-                    @can('subtasks.view')
-                        <x-nav-link :href="route('subtasks.index')" :active="request()->routeIs('subtasks.*')">
-                            Subtareas
-                        </x-nav-link>
-                    @endcan
                     @can('emails.view')
                         <x-nav-link :href="route('emails.index')" :active="request()->routeIs('emails.*')">
                             Correos
@@ -95,11 +90,6 @@
             @can('tasks.view')
                 <x-responsive-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*')">
                     Tareas
-                </x-responsive-nav-link>
-            @endcan
-            @can('subtasks.view')
-                <x-responsive-nav-link :href="route('subtasks.index')" :active="request()->routeIs('subtasks.*')">
-                    Subtareas
                 </x-responsive-nav-link>
             @endcan
             @can('emails.view')

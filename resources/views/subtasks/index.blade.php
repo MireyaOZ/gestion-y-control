@@ -23,6 +23,7 @@
                         <div>
                             <h3 class="text-lg font-semibold text-white">{{ $subtask->title }}</h3>
                             <p class="mt-1 text-sm text-slate-400">{{ $subtask->task->title }}</p>
+                            <p class="mt-1 text-sm text-slate-400">Vencimiento: {{ optional($subtask->due_date)->format('d/m/Y') ?: 'Sin vencimiento' }}</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <x-status-pill :label="$subtask->status->name" :tone="$subtask->status->slug" />

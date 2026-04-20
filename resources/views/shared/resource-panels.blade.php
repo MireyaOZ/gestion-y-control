@@ -1,4 +1,6 @@
 @php($showComments = $showComments ?? true)
+@php($attachmentListClasses = $model->attachments->count() > 2 ? 'mt-4 max-h-[21rem] space-y-3 overflow-y-auto pr-2' : 'mt-4 space-y-3')
+@php($linkListClasses = $model->links->count() > 2 ? 'mt-4 max-h-[21rem] space-y-3 overflow-y-auto pr-2' : 'mt-4 space-y-3')
 
 <div class="grid gap-6 lg:grid-cols-2">
     <section class="app-card p-6">
@@ -10,14 +12,14 @@
             <button class="icon-button" type="button" x-data @click="$dispatch('open-modal', 'attachment-{{ $type }}-{{ $model->id }}')">+</button>
         </div>
 
-        <div class="mt-4 space-y-3">
+        <div class="{{ $attachmentListClasses }}">
             @forelse ($model->attachments as $attachment)
-                <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 p-4">
-                    <div>
+                <div class="flex items-start justify-between gap-4 rounded-2xl border border-white/10 p-4">
+                    <div class="min-w-0 flex-1">
                         <p class="text-sm font-medium text-white">{{ $attachment->original_name }}</p>
                         <p class="mt-1 text-xs text-slate-400">{{ number_format($attachment->size / 1024, 1) }} KB</p>
                     </div>
-                    <div class="flex items-center gap-3">
+                    <div class="flex shrink-0 items-center gap-3 pt-1">
                         <a class="text-xs text-emerald-300" href="{{ route('attachments.show', $attachment) }}" target="_blank">Abrir</a>
                         <form method="POST" action="{{ route('attachments.destroy', $attachment) }}">
                             @csrf
@@ -41,14 +43,14 @@
             <button class="icon-button" type="button" x-data @click="$dispatch('open-modal', 'link-{{ $type }}-{{ $model->id }}')">+</button>
         </div>
 
-        <div class="mt-4 space-y-3">
+        <div class="{{ $linkListClasses }}">
             @forelse ($model->links as $link)
-                <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 p-4">
-                    <div>
+                <div class="flex items-start justify-between gap-4 rounded-2xl border border-white/10 p-4">
+                    <div class="min-w-0 flex-1">
                         <a class="text-sm font-medium text-emerald-300" href="{{ $link->url }}" target="_blank">{{ $link->label }}</a>
-                        <p class="mt-1 text-xs text-slate-400">{{ $link->url }}</p>
+                        <a class="mt-1 block break-all text-xs text-slate-400 hover:text-[#960018] hover:underline" href="{{ $link->url }}" target="_blank">{{ $link->url }}</a>
                     </div>
-                    <form method="POST" action="{{ route('links.destroy', $link) }}">
+                    <form method="POST" action="{{ route('links.destroy', $link) }}" class="shrink-0 pt-1">
                         @csrf
                         @method('DELETE')
                         <button class="text-xs text-rose-300" type="submit">Eliminar</button>

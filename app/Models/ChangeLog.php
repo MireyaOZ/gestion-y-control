@@ -17,6 +17,8 @@ class ChangeLog extends Model
         'deleted' => 'Eliminado',
         'assigned' => 'Asignado',
         'status_changed' => 'Estado actualizado',
+        'link_added' => 'Link agregado',
+        'link_deleted' => 'Link eliminado',
         'attachment_added' => 'Adjunto agregado',
         'attachment_deleted' => 'Adjunto eliminado',
     ];

@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="text-2xl font-semibold text-white">Permisos</h2>
-            <a href="{{ route('admin.permissions.create') }}" class="app-button">Nuevo permiso</a>
+            <a href="{{ route('admin.permissions.create') }}" class="app-button-light">Agregar nuevo permiso</a>
         </div>
     </x-slot>
 
@@ -25,5 +25,5 @@
         </table>
     </div>
 
-    {{ $permissions->links() }}
+    {{ $permissions->onEachSide(1)->links('vendor.pagination.compact') }}
 </x-app-layout>

@@ -5,7 +5,7 @@
                 <h2 class="text-2xl font-semibold text-white">Usuarios</h2>
                 <p class="text-sm text-white/80">Administración de usuarios, roles y activación.</p>
             </div>
-            <a href="{{ route('admin.users.create') }}" class="app-button">Nuevo usuario</a>
+            <a href="{{ route('admin.users.create') }}" class="app-button-light">Agregar nuevo usuario</a>
         </div>
     </x-slot>
 
@@ -40,6 +40,6 @@
             </table>
         </div>
 
-        {{ $users->links() }}
+        {{ $users->onEachSide(1)->links('vendor.pagination.compact') }}
     </div>
 </x-app-layout>

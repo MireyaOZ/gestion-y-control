@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <h2 class="text-2xl font-semibold text-white">Roles</h2>
-            <a href="{{ route('admin.roles.create') }}" class="app-button">Nuevo rol</a>
+            <a href="{{ route('admin.roles.create') }}" class="app-button-light">Agregar nuevo rol</a>
         </div>
     </x-slot>
 

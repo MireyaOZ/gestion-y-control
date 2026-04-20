@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold text-white">{{ $subtask->title }}</h2>
-                <p class="text-sm text-slate-400">Tarea padre: {{ $subtask->task->title }} · Tiempo desde asignación: {{ $subtask->assignment_elapsed ?: 'Sin asignar' }}</p>
+                <p class="text-sm text-white/80">Tarea padre: {{ $subtask->task->title }} · Tiempo desde asignación: {{ $subtask->assignment_elapsed ?: 'Sin asignar' }}</p>
             </div>
             @can('update', $subtask)
                 <a href="{{ route('subtasks.edit', $subtask) }}" class="app-button-secondary">Editar</a>
@@ -23,7 +23,10 @@
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Prioridad</span><p class="mt-2 text-white">{{ $subtask->priority->name }}</p></div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Vencimiento</span><p class="mt-2 text-white">{{ optional($subtask->due_date)->format('d/m/Y') ?: 'Sin fecha' }}</p></div>
             </div>
-            <p class="mt-6 text-slate-300">{{ $subtask->description }}</p>
+            <div class="mt-6">
+                <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Descripción</span>
+                <p class="mt-2 text-slate-300">{{ $subtask->description ?: 'Sin descripción' }}</p>
+            </div>
 
             @can('changeStatus', $subtask)
                 <form method="POST" action="{{ route('subtasks.status', $subtask) }}" class="mt-6 flex flex-wrap items-end gap-3">

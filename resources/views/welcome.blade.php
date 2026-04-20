@@ -46,7 +46,7 @@
                                 Organiza, asigna y supervisa tareas fácilmente.
                             </p>
                             <p class="max-w-2xl text-base leading-7 text-slate-500">
-                                Administra correos, sistemas, tareas y subtareas desde un solo lugar con una vista clara del avance operativo y del historial de cambios.
+                                Administra correos, sistemas y tareas desde un solo lugar con una vista clara del avance operativo y del historial de cambios.
                             </p>
                         </div>
 

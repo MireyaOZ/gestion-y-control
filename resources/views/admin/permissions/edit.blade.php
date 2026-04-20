@@ -6,7 +6,7 @@
             @method('PUT')
             <x-validation-errors />
             <input name="name" class="app-input" value="{{ old('name', $permission->name) }}" required>
-            <button class="app-button" type="submit">Guardar</button>
+            <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar</button>
         </form>
     </div>
 </x-app-layout>

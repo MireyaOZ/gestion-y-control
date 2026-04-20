@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold text-white">{{ $task->title }}</h2>
-                <p class="text-sm text-slate-400">Creada {{ $task->created_at->diffForHumans() }} · Tiempo desde asignación: {{ $task->assignment_elapsed ?: 'Sin asignar' }}</p>
+                <p class="text-sm text-white/80">Creada {{ $task->created_at->diffForHumans() }} · Tiempo desde asignación: {{ $task->assignment_elapsed ?: 'Sin asignar' }}</p>
             </div>
             <div class="flex gap-3">
                 @can('update', $task)
@@ -25,7 +25,10 @@
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Prioridad</span><p class="mt-2 text-white">{{ $task->priority->name }}</p></div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Vencimiento</span><p class="mt-2 text-white">{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha' }}</p></div>
             </div>
-            <p class="mt-6 text-slate-300">{{ $task->description }}</p>
+            <div class="mt-6">
+                <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Descripción</span>
+                <p class="mt-2 text-slate-300">{{ $task->description ?: 'Sin descripción' }}</p>
+            </div>
 
             @can('changeStatus', $task)
                 <form method="POST" action="{{ route('tasks.status', $task) }}" class="mt-6 flex flex-wrap items-end gap-3">
@@ -68,7 +71,7 @@
                         <div class="flex items-center justify-between gap-3">
                             <div>
                                 <p class="font-medium text-white">{{ $subtask->title }}</p>
-                                <p class="text-sm text-slate-400">{{ optional($subtask->due_date)->format('d/m/Y') ?: 'Sin vencimiento' }}</p>
+                                <p class="text-sm text-slate-400">Vencimiento: {{ optional($subtask->due_date)->format('d/m/Y') ?: 'Sin vencimiento' }}</p>
                                 <p class="mt-1 text-sm text-slate-400">
                                     {{ $subtask->assignees->isNotEmpty() ? 'Asignado a: '.$subtask->assignees->pluck('name')->join(', ') : 'Sin usuario asignado' }}
                                 </p>

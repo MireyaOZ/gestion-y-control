@@ -52,5 +52,5 @@
 
 <div class="mt-6 flex items-center gap-3">
     <button class="app-button" type="submit">Guardar</button>
-    <a href="{{ route('subtasks.index') }}" class="app-button-secondary">Cancelar</a>
+    <a href="{{ isset($subtask) ? route('subtasks.show', $subtask) : route('tasks.show', old('task_id', $selectedTaskId ?? '')) }}" class="app-button-secondary">Cancelar</a>
 </div>

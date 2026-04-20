@@ -145,8 +145,32 @@ trix-editor [data-trix-mutable="true"] {
     @apply text-slate-900;
 }
 
+.trix-content,
+trix-editor {
+    color: rgb(15 23 42);
+}
+
+.prose {
+    color: rgb(15 23 42);
+}
+
+.prose p,
+.prose li,
+.prose strong,
+.prose a,
+.prose code {
+    color: inherit;
+}
+
 .app-card .text-white {
     color: rgb(15 23 42);
+}
+
+.app-card .app-button,
+.app-card .icon-button,
+.app-modal .app-button,
+.app-modal .icon-button {
+    color: rgb(255 255 255) !important;
 }
 
 .app-card .text-slate-100,

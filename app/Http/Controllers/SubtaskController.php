@@ -122,10 +122,12 @@ class SubtaskController extends Controller
     {
         $this->authorize('delete', $subtask);
 
+        $task = $subtask->task;
+
         ChangeLogger::log($subtask, 'deleted', "<p>Subtarea eliminada por ".(string) request()->user()?->name.'.</p>');
         $subtask->delete();
 
-        return redirect()->route('subtasks.index')->with('status', 'Subtarea eliminada.');
+        return redirect()->route('tasks.show', $task)->with('status', 'Subtarea eliminada.');
     }
 
     protected function validatedData(Request $request): array

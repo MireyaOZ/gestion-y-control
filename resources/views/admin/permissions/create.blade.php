@@ -5,7 +5,7 @@
             @csrf
             <x-validation-errors />
             <input name="name" class="app-input" placeholder="ej. tasks.archive" value="{{ old('name') }}" required>
-            <button class="app-button" type="submit">Guardar</button>
+            <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar</button>
         </form>
     </div>
 </x-app-layout>

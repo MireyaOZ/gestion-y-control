@@ -41,8 +41,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/search/users', [SearchController::class, 'users'])->name('search.users');
 
     Route::resource('tasks', TaskController::class);
+    Route::get('tasks/reporte/{format}', [TaskController::class, 'report'])->name('tasks.report');
     Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status');
-    Route::resource('subtasks', SubtaskController::class);
+    Route::redirect('subtasks', 'tasks')->name('subtasks.index');
+    Route::resource('subtasks', SubtaskController::class)->except(['index']);
     Route::patch('subtasks/{subtask}/status', [SubtaskController::class, 'updateStatus'])->name('subtasks.status');
 
     Route::post('/comments/{type}/{id}', [CommentController::class, 'store'])->name('comments.store');

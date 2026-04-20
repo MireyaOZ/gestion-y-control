@@ -71,6 +71,13 @@ class AttachmentController extends Controller
                 'attachment_added',
                 '<div data-status-group="'.e($model->status?->name ?? 'Sin estatus').'"><p>Adjunto agregado por '.e($request->user()->name).'.</p><div><strong>Archivo agregado:</strong><ul style="margin:6px 0 0 18px;list-style:disc;"><li>'.e($file->getClientOriginalName()).' <a href="'.e(route('attachments.show', $attachment)).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir archivo</a></li></ul></div></div>'
             );
+        } else {
+            ChangeLogger::log(
+                $model,
+                'attachment_added',
+                '<p>Adjunto agregado por '.e($request->user()->name).'.</p>'
+                .'<p><strong>Archivo:</strong> '.e($attachment->original_name).' <a href="'.e(route('attachments.show', $attachment)).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir archivo</a></p>'
+            );
         }
 
         return back()->with('status', 'Adjunto cargado.');
@@ -89,6 +96,13 @@ class AttachmentController extends Controller
                 $attachable,
                 'attachment_deleted',
                 '<div data-status-group="'.e($attachable->status?->name ?? 'Sin estatus').'"><p>Adjunto eliminado por '.e(request()->user()?->name ?? 'Sistema').'.</p><div><strong>Archivo eliminado:</strong><ul style="margin:6px 0 0 18px;list-style:disc;"><li>'.e($attachment->original_name).'</li></ul></div></div>'
+            );
+        } else {
+            ChangeLogger::log(
+                $attachable,
+                'attachment_deleted',
+                '<p>Adjunto eliminado por '.e(request()->user()?->name ?? 'Sistema').'.</p>'
+                .'<p><strong>Archivo:</strong> '.e($attachment->original_name).'</p>'
             );
         }
 
