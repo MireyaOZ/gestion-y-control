@@ -20,7 +20,7 @@ class LinkController extends Controller
 
         $data = $request->validate([
             'label' => ['required', 'string', 'max:255'],
-            'url' => ['required', 'url', 'max:2048'],
+            'url' => ['required', 'url', 'max:5000'],
         ]);
 
         $model->links()->create($data + ['created_by' => $request->user()->id]);

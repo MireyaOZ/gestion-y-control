@@ -22,6 +22,10 @@ class SystemRecordController extends Controller
         abort_unless($request->user()->can('systems.view'), 403);
 
         $search = (string) $request->string('search');
+        $selectedRequestDate = (string) $request->string('request_date');
+        $selectedRequestYear = (string) $request->string('request_year');
+        $selectedDateFrom = (string) $request->string('created_at_from');
+        $selectedDateTo = (string) $request->string('created_at_to');
 
         $systems = $this->buildFilteredSystemsQuery($request)
             ->with(['links', 'attachments', 'changeLogs.author'])
@@ -31,7 +35,15 @@ class SystemRecordController extends Controller
 
         $statuses = SystemStatus::query()->orderBy('name')->get();
 
-        return view('systems.index', compact('systems', 'statuses', 'search'));
+        return view('systems.index', compact(
+            'systems',
+            'statuses',
+            'search',
+            'selectedRequestDate',
+            'selectedRequestYear',
+            'selectedDateFrom',
+            'selectedDateTo',
+        ));
     }
 
     public function report(Request $request, string $format): Response
@@ -144,6 +156,12 @@ class SystemRecordController extends Controller
         $originalErrorsInProgress = $system->errors_in_progress;
         $originalInReview = $system->in_review;
         $originalFinalized = $system->finalized;
+        $originalTotalTrelloCards = $this->calculateTotalTrelloCards(
+            $originalPendingErrors,
+            $originalErrorsInProgress,
+            $originalInReview,
+            $originalFinalized,
+        );
 
         $system->update([
             'request_date' => $data['request_date'],
@@ -177,17 +195,21 @@ class SystemRecordController extends Controller
         }
 
         if ($originalTrelloUrl !== $system->trello_url) {
-            $changes[] = '<p><strong>Trello:</strong> '.e($originalTrelloUrl ?: 'Sin Trello').' '.self::CHANGE_ARROW.' '.e($system->trello_url ?: 'Sin Trello').'</p>';
+            $changes[] = '<p><strong>Trello:</strong> '.$this->renderHistoryUrl($originalTrelloUrl, 'Abrir Trello', 'Sin Trello').' '.self::CHANGE_ARROW.' '.$this->renderHistoryUrl($system->trello_url, 'Abrir Trello', 'Sin Trello').'</p>';
         }
 
-        if ($originalStatusId !== $system->system_status_id) {
-            $changes[] = '<p><strong>Estatus:</strong> '.e($originalStatusName).' '.self::CHANGE_ARROW.' '.e($system->status?->display_name ?? 'Sin estatus').'</p>';
+        $updatedStatusName = $system->status?->display_name ?? 'Sin estatus';
+        $statusChanged = $originalStatusName !== $updatedStatusName;
+
+        if ($statusChanged) {
+            $changes[] = '<p><strong>Estatus:</strong> '.e($originalStatusName).' '.self::CHANGE_ARROW.' '.e($updatedStatusName).'</p>';
         }
 
         $this->appendMetricChange($changes, 'Tarjetas errores pendientes', $originalPendingErrors, $system->pending_errors);
         $this->appendMetricChange($changes, 'Tarjetas errores en proceso de solución', $originalErrorsInProgress, $system->errors_in_progress);
         $this->appendMetricChange($changes, 'Tarjetas en revisión', $originalInReview, $system->in_review);
         $this->appendMetricChange($changes, 'Tarjetas finalizadas', $originalFinalized, $system->finalized);
+        $this->appendMetricChange($changes, 'Total de tarjetas en trello', $originalTotalTrelloCards, $system->total_trello_cards);
 
         if ($uploadedAttachments !== []) {
             $changes[] = $this->renderAttachmentList('Adjuntos agregados', $uploadedAttachments, true);
@@ -196,7 +218,7 @@ class SystemRecordController extends Controller
         if ($changes !== []) {
             ChangeLogger::log(
                 $system,
-                $originalStatusId !== $system->system_status_id ? 'status_changed' : 'updated',
+                $statusChanged ? 'status_changed' : 'updated',
                 $this->wrapHistoryContent(
                     $system->status?->name,
                     '<p>Sistema actualizado por '.e($request->user()->name).'.</p>'.implode('', $changes)
@@ -233,8 +255,8 @@ class SystemRecordController extends Controller
             'request_date' => ['required', 'date'],
             'name' => ['required', 'string', 'max:255'],
             'system_status_id' => ['required', 'exists:system_statuses,id'],
-            'link' => ['nullable', 'url', 'max:2048'],
-            'trello_url' => ['nullable', 'url', 'max:2048'],
+            'link' => ['nullable', 'url', 'max:5000'],
+            'trello_url' => ['nullable', 'url', 'max:5000'],
             'pending_errors' => ['nullable', 'integer', 'min:0'],
             'errors_in_progress' => ['nullable', 'integer', 'min:0'],
             'in_review' => ['nullable', 'integer', 'min:0'],
@@ -244,7 +266,7 @@ class SystemRecordController extends Controller
 
         $status = SystemStatus::query()->find($data['system_status_id']);
 
-        if ($status?->slug === 'en-pruebas') {
+        if ($status?->isTesting()) {
             foreach (['pending_errors', 'errors_in_progress', 'in_review', 'finalized'] as $field) {
                 if ($data[$field] === null) {
                     $data[$field] = 0;
@@ -265,6 +287,10 @@ class SystemRecordController extends Controller
     protected function buildFilteredSystemsQuery(Request $request): Builder
     {
         $search = (string) $request->string('search');
+        $requestDate = (string) $request->string('request_date');
+        $requestYear = (string) $request->string('request_year');
+        $createdAtFrom = (string) $request->string('created_at_from');
+        $createdAtTo = (string) $request->string('created_at_to');
 
         return SystemRecord::query()
             ->with('status')
@@ -273,7 +299,11 @@ class SystemRecordController extends Controller
                     $subQuery->where('name', 'like', "%{$search}%")
                         ->orWhereHas('status', fn ($statusQuery) => $statusQuery->where('name', 'like', "%{$search}%"));
                 });
-            });
+            })
+            ->when($requestDate !== '', fn ($query) => $query->whereDate('request_date', $requestDate))
+            ->when($requestYear !== '', fn ($query) => $query->whereYear('request_date', (int) $requestYear))
+            ->when($createdAtFrom !== '', fn ($query) => $query->whereDate('created_at', '>=', $createdAtFrom))
+            ->when($createdAtTo !== '', fn ($query) => $query->whereDate('created_at', '<=', $createdAtTo));
     }
 
     protected function syncAttachments(SystemRecord $system, array $files, int $userId): array
@@ -298,7 +328,7 @@ class SystemRecordController extends Controller
 
             $uploadedAttachments[] = [
                 'name' => $attachment->original_name,
-                'url' => asset('storage/'.$attachment->path),
+                'url' => route('attachments.show', $attachment),
             ];
         }
 
@@ -343,6 +373,14 @@ class SystemRecordController extends Controller
         }
     }
 
+    protected function calculateTotalTrelloCards(mixed $pendingErrors, mixed $errorsInProgress, mixed $inReview, mixed $finalized): int
+    {
+        return (int) ($pendingErrors ?? 0)
+            + (int) ($errorsInProgress ?? 0)
+            + (int) ($inReview ?? 0)
+            + (int) ($finalized ?? 0);
+    }
+
     protected function buildCreatedSystemLogContent(SystemRecord $system, string $authorName, array $uploadedAttachments): string
     {
         $content = '<p>Sistema registrado por '.e($authorName).'.</p>'
@@ -350,7 +388,7 @@ class SystemRecordController extends Controller
             .'<p><strong>Nombre del sistema:</strong> '.e($system->name).'</p>'
             .'<p><strong>Estatus:</strong> '.e($system->status?->display_name ?? 'Sin estatus').'</p>'
             .'<p><strong>Link:</strong> '.$this->renderHistoryUrl($system->links->first()?->url).'</p>'
-            .'<p><strong>Trello:</strong> '.e($system->trello_url ?: 'Sin Trello').'</p>';
+            .'<p><strong>Trello:</strong> '.$this->renderHistoryUrl($system->trello_url, 'Abrir Trello', 'Sin Trello').'</p>';
 
         $content .= $this->renderTestingMetricsSnapshot($system);
 
@@ -368,7 +406,7 @@ class SystemRecordController extends Controller
             .'<p><strong>Nombre del sistema:</strong> '.e($system->name).'</p>'
             .'<p><strong>Estatus:</strong> '.e($system->status?->display_name ?? 'Sin estatus').'</p>'
             .'<p><strong>Link:</strong> '.$this->renderHistoryUrl($system->links->first()?->url).'</p>'
-            .'<p><strong>Trello:</strong> '.e($system->trello_url ?: 'Sin Trello').'</p>';
+            .'<p><strong>Trello:</strong> '.$this->renderHistoryUrl($system->trello_url, 'Abrir Trello', 'Sin Trello').'</p>';
 
         $content .= $this->renderTestingMetricsSnapshot($system);
 
@@ -381,14 +419,15 @@ class SystemRecordController extends Controller
 
     protected function renderTestingMetricsSnapshot(SystemRecord $system): string
     {
-        if ($system->status?->slug !== 'en-pruebas') {
+        if (! $system->status?->isTesting()) {
             return '';
         }
 
         return '<p><strong>Tarjetas errores pendientes:</strong> '.e((string) ($system->pending_errors ?? 0)).'</p>'
             .'<p><strong>Tarjetas errores en proceso de solución:</strong> '.e((string) ($system->errors_in_progress ?? 0)).'</p>'
             .'<p><strong>Tarjetas en revisión:</strong> '.e((string) ($system->in_review ?? 0)).'</p>'
-            .'<p><strong>Tarjetas finalizadas:</strong> '.e((string) ($system->finalized ?? 0)).'</p>';
+            .'<p><strong>Tarjetas finalizadas:</strong> '.e((string) ($system->finalized ?? 0)).'</p>'
+            .'<p><strong>Total de tarjetas en trello:</strong> '.e((string) $system->total_trello_cards).'</p>';
     }
 
     protected function renderAttachmentList(string $title, array $attachments, bool $includeLinks = false): string
@@ -427,13 +466,14 @@ class SystemRecordController extends Controller
         return '<div><strong>'.e($title).':</strong><ul style="margin:6px 0 0 18px;list-style:disc;">'.$items.'</ul></div>';
     }
 
-    protected function renderHistoryUrl(?string $url): string
+    protected function renderHistoryUrl(?string $url, string $label = 'Abrir link', string $emptyLabel = 'Sin link'): string
     {
         if (blank($url)) {
-            return 'Sin link';
+            return $emptyLabel;
         }
 
-        return '<a href="'.e($url).'" target="_blank" style="color:#960018;text-decoration:underline;">'.e($url).'</a>';
+        return '<a href="'.e($url).'" target="_blank" style="color:#960018;text-decoration:underline;">'.e($label).'</a>'
+            .' <span style="color:#64748b;word-break:break-all;">('.e($url).')</span>';
     }
 
     protected function formatRequestDate(?string $date): string

@@ -18,7 +18,7 @@
                         <p class="mt-1 text-xs text-slate-400">{{ number_format($attachment->size / 1024, 1) }} KB</p>
                     </div>
                     <div class="flex items-center gap-3">
-                        <a class="text-xs text-emerald-300" href="{{ asset('storage/'.$attachment->path) }}" target="_blank">Abrir</a>
+                        <a class="text-xs text-emerald-300" href="{{ route('attachments.show', $attachment) }}" target="_blank">Abrir</a>
                         <form method="POST" action="{{ route('attachments.destroy', $attachment) }}">
                             @csrf
                             @method('DELETE')

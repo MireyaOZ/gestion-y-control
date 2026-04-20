@@ -26,6 +26,10 @@ class SystemRecord extends Model
         'created_by',
     ];
 
+    protected $appends = [
+        'total_trello_cards',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -45,5 +49,13 @@ class SystemRecord extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getTotalTrelloCardsAttribute(): int
+    {
+        return (int) ($this->pending_errors ?? 0)
+            + (int) ($this->errors_in_progress ?? 0)
+            + (int) ($this->in_review ?? 0)
+            + (int) ($this->finalized ?? 0);
     }
 }

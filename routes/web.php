@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/comments/{type}/{id}', [CommentController::class, 'store'])->name('comments.store');
     Route::post('/links/{type}/{id}', [LinkController::class, 'store'])->name('links.store');
     Route::delete('/links/{link}', [LinkController::class, 'destroy'])->name('links.destroy');
+    Route::get('/attachments/{attachment}', [AttachmentController::class, 'show'])->name('attachments.show');
     Route::post('/attachments/{type}/{id}', [AttachmentController::class, 'store'])->name('attachments.store');
     Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 

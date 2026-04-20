@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
     body {
         @apply bg-white text-slate-900;
     }
@@ -31,6 +35,22 @@
 
     .app-button-secondary {
         @apply inline-flex items-center justify-center rounded-2xl border border-[#960018]/20 bg-white px-4 py-2 text-sm font-semibold text-[#960018] transition hover:bg-[#960018]/5;
+    }
+
+    .app-stepper-control {
+        @apply mt-1 flex items-center overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm;
+    }
+
+    .app-stepper-button {
+        @apply inline-flex h-12 w-12 shrink-0 items-center justify-center bg-slate-100 text-lg font-semibold text-[#960018] transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-[#960018]/20;
+    }
+
+    .app-stepper-input {
+        @apply h-12 w-full border-0 bg-white text-center text-base font-semibold text-slate-900 focus:ring-0;
+    }
+
+    .app-stepper-total {
+        @apply mt-1 flex h-12 items-center justify-center rounded-2xl border border-slate-300 bg-slate-100 px-4 text-base font-semibold text-[#960018];
     }
 
     .icon-button {

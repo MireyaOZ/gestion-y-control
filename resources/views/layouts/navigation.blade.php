@@ -5,7 +5,7 @@
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
                         <div class="rounded-2xl bg-white px-3 py-2 text-sm font-black uppercase tracking-[0.35em] text-[#960018] shadow-sm">
-                            G Y C
+                            Gestión Y Control
                         </div>
                     </a>
                 </div>

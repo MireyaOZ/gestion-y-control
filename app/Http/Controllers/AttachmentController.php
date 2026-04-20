@@ -10,10 +10,37 @@ use App\Models\Task;
 use App\Services\ChangeLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AttachmentController extends Controller
 {
     use ResolvesManagedModels;
+
+    public function show(Attachment $attachment)
+    {
+        $this->authorizeViewAction($attachment->attachable);
+
+        $disk = Storage::disk($attachment->disk);
+        abort_unless($disk->exists($attachment->path), 404);
+
+        $stream = $disk->readStream($attachment->path);
+        abort_unless($stream !== false, 404);
+
+        return response()->stream(
+            function () use ($stream): void {
+                fpassthru($stream);
+
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            },
+            200,
+            [
+                'Content-Type' => $attachment->mime_type ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="'.addslashes($attachment->original_name).'"',
+            ]
+        );
+    }
 
     public function store(Request $request, string $type, string $id): RedirectResponse
     {
@@ -27,7 +54,7 @@ class AttachmentController extends Controller
         $file = $data['file'];
         $path = $file->store("attachments/{$type}", 'public');
 
-        $model->attachments()->create([
+        $attachment = $model->attachments()->create([
             'uploaded_by' => $request->user()->id,
             'disk' => 'public',
             'path' => $path,
@@ -42,7 +69,7 @@ class AttachmentController extends Controller
             ChangeLogger::log(
                 $model,
                 'attachment_added',
-                '<div data-status-group="'.e($model->status?->name ?? 'Sin estatus').'"><p>Adjunto agregado por '.e($request->user()->name).'.</p><div><strong>Archivo agregado:</strong><ul style="margin:6px 0 0 18px;list-style:disc;"><li>'.e($file->getClientOriginalName()).' <a href="'.e(asset('storage/'.$path)).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir archivo</a></li></ul></div></div>'
+                '<div data-status-group="'.e($model->status?->name ?? 'Sin estatus').'"><p>Adjunto agregado por '.e($request->user()->name).'.</p><div><strong>Archivo agregado:</strong><ul style="margin:6px 0 0 18px;list-style:disc;"><li>'.e($file->getClientOriginalName()).' <a href="'.e(route('attachments.show', $attachment)).'" target="_blank" style="color:#960018;text-decoration:underline;">Abrir archivo</a></li></ul></div></div>'
             );
         }
 
@@ -78,6 +105,17 @@ class AttachmentController extends Controller
             abort_unless(request()->user()?->can('systems.update'), 403);
         } else {
             $this->authorize('update', $model);
+        }
+    }
+
+    protected function authorizeViewAction(Task|Subtask|SystemRecord $model): void
+    {
+        if ($model instanceof Task) {
+            $this->authorize('view', $model);
+        } elseif ($model instanceof SystemRecord) {
+            abort_unless(request()->user()?->can('systems.view'), 403);
+        } else {
+            $this->authorize('view', $model);
         }
     }
 }

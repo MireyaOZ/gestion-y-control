@@ -241,7 +241,7 @@ class EmailRequestController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'email_cargo_id' => ['required', 'exists:email_cargos,id'],
             'email_movement_type_id' => ['required', 'exists:email_movement_types,id'],
-            'link' => ['nullable', 'url', 'max:2048'],
+            'link' => ['nullable', 'url', 'max:5000'],
         ]);
     }
 

@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold text-white">Usuarios</h2>
-                <p class="text-sm text-slate-400">Administración de usuarios, roles y activación.</p>
+                <p class="text-sm text-white/80">Administración de usuarios, roles y activación.</p>
             </div>
             <a href="{{ route('admin.users.create') }}" class="app-button">Nuevo usuario</a>
         </div>

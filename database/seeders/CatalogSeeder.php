@@ -52,17 +52,17 @@ class CatalogSeeder extends Seeder
         }
 
         foreach ([
-            'En proceso de diagramacion',
-            'En proceso de reunion',
-            'En pruebas',
-            'Visto bueno de pruebas',
-            'Proceso de validacion',
-            'Visto bueno del diagrama',
-            'Finalizado',
-        ] as $systemStatus) {
+            'en-proceso-de-diagramacion' => 'En proceso de diagramacion',
+            'en-proceso-de-reunion' => 'En proceso de reunion',
+            'en-pruebas' => 'En pruebas internas',
+            'visto-bueno-de-pruebas' => 'Visto bueno de pruebas',
+            'proceso-de-validacion' => 'Proceso de validacion',
+            'visto-bueno-del-diagrama' => 'Visto bueno del diagrama',
+            'finalizado' => 'Finalizado',
+        ] as $systemStatusSlug => $systemStatusName) {
             SystemStatus::query()->updateOrCreate(
-                ['slug' => Str::slug($systemStatus)],
-                ['name' => $systemStatus],
+                ['slug' => $systemStatusSlug],
+                ['name' => $systemStatusName],
             );
         }
 

@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <form method="GET" class="app-card p-4" x-data="{ showFilters: @js(filled($selectedAreaId) || filled($selectedMovementTypeId) || filled($selectedStatus) || filled($selectedDateFrom) || filled($selectedDateTo) || filled($selectedRequestDate) || filled($selectedRequestYear)) }">
+        <form method="GET" class="app-card relative p-4" x-data="{ showFilters: false }" @keydown.escape.window="showFilters = false">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div class="flex-1">
                     <input
@@ -47,84 +47,109 @@
                 </div>
             </div>
 
-            <div x-show="showFilters" x-transition class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div class="grid gap-5 xl:grid-cols-3 2xl:grid-cols-4">
-                        <div>
-                            <label for="area_id" class="app-label">Buscar por área</label>
-                            <select id="area_id" name="area_id" class="app-input">
-                                <option value="">Selecciona un área</option>
-                                @foreach ($areaOptions as $areaOption)
-                                    <option value="{{ $areaOption['id'] }}" @selected((int) $selectedAreaId === (int) $areaOption['id'])>
-                                        {{ $areaOption['label'] }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="mt-2 text-xs text-slate-500">
-                                Al elegir un área se mostrarán sus registros y todos los de sus dependencias hijas.
-                            </p>
-                        </div>
+            <div x-cloak x-show="showFilters" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="showFilters = false"></div>
 
+            <div
+                x-cloak
+                x-show="showFilters"
+                x-transition:enter="transform transition ease-out duration-300"
+                x-transition:enter-start="translate-x-full opacity-0"
+                x-transition:enter-end="translate-x-0 opacity-100"
+                x-transition:leave="transform transition ease-in duration-200"
+                x-transition:leave-start="translate-x-0 opacity-100"
+                x-transition:leave-end="translate-x-full opacity-0"
+                class="fixed inset-y-0 right-0 z-[150] w-full max-w-xl overflow-y-auto border-l border-slate-200 bg-white shadow-2xl shadow-[#960018]/20"
+            >
+                <div class="sticky top-0 border-b border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
+                    <div class="flex items-start justify-between gap-4">
                         <div>
-                            <label for="movement_type_id" class="app-label">Tipo de movimiento</label>
-                            <select id="movement_type_id" name="movement_type_id" class="app-input">
-                                <option value="">Todos los movimientos</option>
-                                @foreach ($movementTypes as $movementType)
-                                    <option value="{{ $movementType->id }}" @selected((int) $selectedMovementTypeId === (int) $movementType->id)>
-                                        {{ $movementType->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="mt-2 text-xs text-slate-500">
-                                Puedes combinar este filtro con área y texto para ubicar, por ejemplo, solo altas o bajas.
-                            </p>
+                            <h3 class="text-lg font-semibold text-slate-900">Filtros de correos</h3>
+                            <p class="mt-1 text-sm text-slate-500">Ajusta la búsqueda desde este panel lateral.</p>
                         </div>
+                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="showFilters = false">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
 
-                        <div>
-                            <label for="status" class="app-label">Estatus</label>
-                            <select id="status" name="status" class="app-input">
-                                <option value="">Todos los estatus</option>
-                                <option value="active" @selected($selectedStatus === 'active')>Activo</option>
-                                <option value="inactive" @selected($selectedStatus === 'inactive')>Inactivo</option>
-                            </select>
-                            <p class="mt-2 text-xs text-slate-500">
-                                Activo corresponde a Alta y Cambio de contraseña; Inactivo corresponde a Baja.
-                            </p>
-                        </div>
+                <div class="space-y-5 px-6 py-6">
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="area_id" class="app-label">Buscar por área</label>
+                        <select id="area_id" name="area_id" class="app-input">
+                            <option value="">Selecciona un área</option>
+                            @foreach ($areaOptions as $areaOption)
+                                <option value="{{ $areaOption['id'] }}" @selected((int) $selectedAreaId === (int) $areaOption['id'])>
+                                    {{ $areaOption['label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Al elegir un área se mostrarán sus registros y todos los de sus dependencias hijas.
+                        </p>
+                    </div>
 
-                        <div>
-                            <label for="request_date" class="app-label">Fecha de solicitud</label>
-                            <input id="request_date" name="request_date" type="date" class="app-input" value="{{ $selectedRequestDate }}">
-                            <p class="mt-2 text-xs text-slate-500">
-                                Busca los registros usando la fecha capturada en el modal al crear o editar el correo.
-                            </p>
-                        </div>
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="movement_type_id" class="app-label">Tipo de movimiento</label>
+                        <select id="movement_type_id" name="movement_type_id" class="app-input">
+                            <option value="">Todos los movimientos</option>
+                            @foreach ($movementTypes as $movementType)
+                                <option value="{{ $movementType->id }}" @selected((int) $selectedMovementTypeId === (int) $movementType->id)>
+                                    {{ $movementType->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Puedes combinar este filtro con área y texto para ubicar, por ejemplo, solo altas o bajas.
+                        </p>
+                    </div>
 
-                        <div>
-                            <label for="request_year" class="app-label">Año de solicitud</label>
-                            <input id="request_year" name="request_year" type="number" min="2000" max="2100" class="app-input" value="{{ $selectedRequestYear }}" placeholder="2026">
-                            <p class="mt-2 text-xs text-slate-500">
-                                Filtra por el año de la fecha de solicitud capturada en el registro.
-                            </p>
-                        </div>
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="status" class="app-label">Estatus</label>
+                        <select id="status" name="status" class="app-input">
+                            <option value="">Todos los estatus</option>
+                            <option value="active" @selected($selectedStatus === 'active')>Activo</option>
+                            <option value="inactive" @selected($selectedStatus === 'inactive')>Inactivo</option>
+                        </select>
+                        <p class="mt-2 text-xs text-slate-500">
+                            Activo corresponde a Alta y Cambio de contraseña; Inactivo corresponde a Baja.
+                        </p>
+                    </div>
 
-                        <div>
-                            <label for="created_at_from" class="app-label">Fecha desde</label>
-                            <input id="created_at_from" name="created_at_from" type="date" class="app-input" value="{{ $selectedDateFrom }}">
-                            <p class="mt-2 text-xs text-slate-500">
-                                Si eliges solo esta fecha, se buscarán únicamente los registros de ese día.
-                            </p>
-                        </div>
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="request_date" class="app-label">Fecha de solicitud</label>
+                        <input id="request_date" name="request_date" type="date" class="app-input" value="{{ $selectedRequestDate }}">
+                        <p class="mt-2 text-xs text-slate-500">
+                            Busca los registros usando la fecha capturada en el modal al crear o editar el correo.
+                        </p>
+                    </div>
 
-                        <div>
-                            <label for="created_at_to" class="app-label">Fecha hasta</label>
-                            <input id="created_at_to" name="created_at_to" type="date" class="app-input" value="{{ $selectedDateTo }}">
-                            <p class="mt-2 text-xs text-slate-500">
-                                Úsala junto con "Fecha desde" para buscar por un rango completo.
-                            </p>
-                        </div>
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="request_year" class="app-label">Año de solicitud</label>
+                        <input id="request_year" name="request_year" type="number" min="2000" max="2100" class="app-input" value="{{ $selectedRequestYear }}" placeholder="2026">
+                        <p class="mt-2 text-xs text-slate-500">
+                            Filtra por el año de la fecha de solicitud capturada en el registro.
+                        </p>
+                    </div>
 
-                    <div class="flex items-end gap-3 xl:col-span-3 2xl:col-span-4">
-                        <a href="{{ route('emails.index') }}" class="app-button-secondary">Limpiar</a>
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="created_at_from" class="app-label">Fecha desde</label>
+                        <input id="created_at_from" name="created_at_from" type="date" class="app-input" value="{{ $selectedDateFrom }}">
+                        <p class="mt-2 text-xs text-slate-500">
+                            Si eliges solo esta fecha, se buscarán únicamente los registros de ese día.
+                        </p>
+                    </div>
+
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label for="created_at_to" class="app-label">Fecha hasta</label>
+                        <input id="created_at_to" name="created_at_to" type="date" class="app-input" value="{{ $selectedDateTo }}">
+                        <p class="mt-2 text-xs text-slate-500">
+                            Úsala junto con "Fecha desde" para buscar por un rango completo.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-between">
+                        <a href="{{ route('emails.index') }}" class="app-button-secondary justify-center">Limpiar</a>
+                        <button type="submit" class="app-button justify-center" style="color: #ffffff !important;" @click="showFilters = false">Aplicar filtros</button>
                     </div>
                 </div>
             </div>
@@ -163,36 +188,36 @@
             </div>
 
             <div class="app-card overflow-x-auto overflow-y-hidden">
-            <table class="min-w-[1280px] text-sm">
+            <table class="min-w-[1640px] table-auto text-sm">
                 <thead class="bg-slate-50 text-left text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Nombre</th>
-                        <th class="px-4 py-3">Correo</th>
-                        <th class="px-4 py-3">Cargo</th>
-                        <th class="px-4 py-3">Superior jerárquico</th>
-                        <th class="px-4 py-3">Tipo de movimiento</th>
-                        <th class="px-4 py-3">Estatus</th>
-                        <th class="px-4 py-3">Fecha de solicitud</th>
-                        <th class="px-4 py-3">Fecha de creación</th>
-                        <th class="px-4 py-3">Link de interés</th>
-                        <th class="px-4 py-3">Historial de cambios</th>
-                        <th class="px-4 py-3 text-right">Acciones</th>
+                        <th class="min-w-[220px] px-4 py-3">Nombre</th>
+                        <th class="min-w-[200px] px-4 py-3">Correo</th>
+                        <th class="min-w-[240px] px-4 py-3">Cargo</th>
+                        <th class="min-w-[320px] px-4 py-3">Superior jerárquico</th>
+                        <th class="min-w-[170px] px-4 py-3">Tipo de movimiento</th>
+                        <th class="min-w-[130px] px-4 py-3">Estatus</th>
+                        <th class="min-w-[160px] px-4 py-3">Fecha de solicitud</th>
+                        <th class="min-w-[170px] px-4 py-3">Fecha de creación</th>
+                        <th class="min-w-[140px] px-4 py-3">Link de interés</th>
+                        <th class="min-w-[180px] px-4 py-3">Historial de cambios</th>
+                        <th class="min-w-[190px] px-4 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($emailRequests as $emailRequest)
                         <tr class="border-t border-slate-200">
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $emailRequest->name }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $emailRequest->email }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $emailRequest->cargo?->name ?? 'Sin cargo' }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $emailRequest->cargo?->parent_name ?? 'Sin area dependiente' }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $emailRequest->movementType->name }}</td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 font-medium leading-7 text-slate-900">{{ $emailRequest->name }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">{{ $emailRequest->email }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">{{ $emailRequest->cargo?->name ?? 'Sin cargo' }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">{{ $emailRequest->cargo?->parent_name ?? 'Sin area dependiente' }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">{{ $emailRequest->movementType->name }}</td>
+                            <td class="align-top px-4 py-4 text-slate-700">
                                 <x-status-pill :label="$emailRequest->operational_status" :tone="$emailRequest->operational_status_tone" />
                             </td>
-                            <td class="px-4 py-3 text-slate-600">{{ $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $emailRequest->created_at->format('d/m/Y H:i') }}</td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 leading-7 text-slate-600">{{ $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-600">{{ $emailRequest->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">
                                 @if ($emailRequest->links->isNotEmpty())
                                     <a href="{{ $emailRequest->links->first()->url }}" target="_blank" class="inline-flex text-sm text-[#960018] hover:underline">
                                         Abrir link
@@ -201,7 +226,7 @@
                                     <span class="text-slate-400">Sin link</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 text-slate-700">
                                 <button
                                     class="app-button-secondary"
                                     type="button"
@@ -211,8 +236,8 @@
                                     Ver historial
                                 </button>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex justify-end gap-2">
+                            <td class="align-top px-4 py-4">
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
                                     @can('emails.update')
                                         <button
                                             class="app-button-secondary"
@@ -245,7 +270,7 @@
             </div>
         </div>
 
-        {{ $emailRequests->links() }}
+        {{ $emailRequests->onEachSide(1)->links('vendor.pagination.compact') }}
 
         @foreach ($emailRequests as $emailRequest)
             @can('emails.update')
