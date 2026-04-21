@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\ChangeLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,25 +17,52 @@ use Illuminate\Validation\Rule;
 
 class TaskController extends Controller
 {
+    private const CHANGE_ARROW = '<span style="color:#2563eb;font-weight:700;">&rarr;</span>';
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Task::class);
 
-        $user = $request->user();
         $search = (string) $request->string('search');
+        $selectedCreatedDate = (string) $request->string('created_at');
+        $selectedDueDate = (string) $request->string('due_date');
+        $selectedStatusId = $request->integer('task_status_id');
+        $selectedPriorityId = $request->integer('priority_id');
+        $trackingView = $request->string('tracking_view')->toString();
 
-        $tasks = Task::query()
+        $tasks = $this->buildFilteredTasksQuery($request)
             ->with(['status', 'priority', 'creator', 'assignees'])
-            ->when(! $user->can('admin.access'), fn ($query) => $query->where(function ($subQuery) use ($user) {
-                $subQuery->where('created_by', $user->id)
-                    ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id));
-            }))
-            ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
+            ->withCount('subtasks')
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        return view('tasks.index', compact('tasks', 'search'));
+        $overdueQuery = $this->buildOverdueTasksQuery($request);
+        $overdueCount = (clone $overdueQuery)->count();
+
+        $tasksWithDueDateQuery = $this->buildTasksWithDueDateQuery($request);
+        $tasksWithDueDateCount = (clone $tasksWithDueDateQuery)->count();
+
+        $upcomingTasksQuery = $this->buildUpcomingTasksQuery($request);
+        $upcomingTasksCount = (clone $upcomingTasksQuery)->count();
+
+        $statuses = TaskStatus::query()->orderBy('name')->get();
+        $priorities = Priority::query()->orderBy('weight')->get();
+
+        return view('tasks.index', compact(
+            'tasks',
+            'search',
+            'statuses',
+            'priorities',
+            'selectedCreatedDate',
+            'selectedDueDate',
+            'selectedStatusId',
+            'selectedPriorityId',
+            'trackingView',
+            'overdueCount',
+            'tasksWithDueDateCount',
+            'upcomingTasksCount',
+        ));
     }
 
     public function create(): View
@@ -105,9 +133,10 @@ class TaskController extends Controller
             'priority',
             'creator',
             'assignees',
-            'subtasks.status',
-            'subtasks.priority',
-            'subtasks.assignees',
+            'rootSubtasks.status',
+            'rootSubtasks.priority',
+            'rootSubtasks.assignees',
+            'rootSubtasks.childSubtasksRecursive',
             'attachments.uploader',
             'links.creator',
             'comments.author',
@@ -176,7 +205,7 @@ class TaskController extends Controller
             $task,
             'status_changed',
             '<p>Estado de tarea actualizado por '.e($request->user()->name).'.</p>'
-            .'<p><strong>Estado:</strong> '.e($originalStatusName).' '.e('→').' '.e($task->status?->name ?? 'Sin estado').'</p>'
+            .'<p><strong>Estado:</strong> '.e($originalStatusName).' '.self::CHANGE_ARROW.' '.e($task->status?->name ?? 'Sin estado').'</p>'
         );
 
         return back()->with('status', 'Estado de la tarea actualizado.');
@@ -205,17 +234,74 @@ class TaskController extends Controller
         ]);
     }
 
-    protected function buildFilteredTasksQuery(Request $request)
+    protected function buildFilteredTasksQuery(Request $request): Builder
+    {
+        $trackingView = $request->string('tracking_view')->toString();
+
+        return match ($trackingView) {
+            'overdue' => $this->buildOverdueTasksQuery($request),
+            'due-date' => $this->buildTasksWithDueDateQuery($request),
+            'upcoming' => $this->buildUpcomingTasksQuery($request),
+            default => $this->buildTaskFilterBaseQuery($request),
+        };
+    }
+
+    protected function buildTaskFilterBaseQuery(Request $request): Builder
+    {
+        $search = (string) $request->string('search');
+        $selectedCreatedDate = (string) $request->string('created_at');
+        $selectedDueDate = (string) $request->string('due_date');
+        $selectedStatusId = $request->integer('task_status_id');
+        $selectedPriorityId = $request->integer('priority_id');
+
+        return $this->buildVisibleTasksQuery($request)
+            ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
+            ->when($selectedCreatedDate !== '', fn ($query) => $query->whereDate('created_at', $selectedCreatedDate))
+            ->when($selectedDueDate !== '', fn ($query) => $query->whereDate('due_date', $selectedDueDate))
+            ->when($selectedStatusId > 0, fn ($query) => $query->where('task_status_id', $selectedStatusId))
+            ->when($selectedPriorityId > 0, fn ($query) => $query->where('priority_id', $selectedPriorityId));
+    }
+
+    protected function buildOverdueTasksQuery(Request $request): Builder
+    {
+        return $this->applyOverdueFilter($this->buildTaskFilterBaseQuery($request));
+    }
+
+    protected function buildTasksWithDueDateQuery(Request $request): Builder
+    {
+        return $this->buildTaskFilterBaseQuery($request)->whereNotNull('due_date');
+    }
+
+    protected function buildUpcomingTasksQuery(Request $request): Builder
+    {
+        return $this->buildTaskFilterBaseQuery($request)
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '>=', today())
+            ->whereHas('status', fn (Builder $statusQuery) => $statusQuery->whereNotIn('slug', $this->closedTaskStatusSlugs()));
+    }
+
+    protected function buildVisibleTasksQuery(Request $request): Builder
     {
         $user = $request->user();
-        $search = (string) $request->string('search');
 
         return Task::query()
             ->when(! $user->can('admin.access'), fn ($query) => $query->where(function ($subQuery) use ($user) {
                 $subQuery->where('created_by', $user->id)
                     ->orWhereHas('assignees', fn ($assignees) => $assignees->whereKey($user->id));
-            }))
-            ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"));
+            }));
+    }
+
+    protected function applyOverdueFilter(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', today())
+            ->whereHas('status', fn (Builder $statusQuery) => $statusQuery->whereNotIn('slug', $this->closedTaskStatusSlugs()));
+    }
+
+    protected function closedTaskStatusSlugs(): array
+    {
+        return ['completada', 'cancelada', 'rechazado'];
     }
 
     protected function syncAssignees(Task $task, array $assigneeIds): void
@@ -247,7 +333,7 @@ class TaskController extends Controller
         $updatedValue = filled($updatedValue) ? $updatedValue : $emptyLabel;
 
         if ($originalValue !== $updatedValue) {
-            $changes[] = '<p><strong>'.e($label).':</strong> '.e($originalValue).' '.e('→').' '.e($updatedValue).'</p>';
+            $changes[] = '<p><strong>'.e($label).':</strong> '.e($originalValue).' '.self::CHANGE_ARROW.' '.e($updatedValue).'</p>';
         }
     }
 
@@ -257,7 +343,7 @@ class TaskController extends Controller
         $updatedList = $this->formatAssigneeList($updatedAssignees);
 
         if ($originalList !== $updatedList) {
-            $changes[] = '<p><strong>Asignados:</strong> '.e($originalList).' '.e('→').' '.e($updatedList).'</p>';
+            $changes[] = '<p><strong>Asignados:</strong> '.e($originalList).' '.self::CHANGE_ARROW.' '.e($updatedList).'</p>';
         }
     }
 

@@ -22,29 +22,86 @@
             </div>
         </div>
 
-        <div class="app-card p-6">
-            <div class="flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-white">Próximas tareas</h3>
-                <a href="{{ route('tasks.index') }}" class="text-sm text-emerald-300">Ver todas</a>
-            </div>
+        <section class="grid gap-6 xl:grid-cols-3">
+            @php($dashboardCharts = [
+                ['title' => 'Tareas por estado', 'subtitle' => 'Distribución del trabajo actual', 'data' => $taskChart],
+                ['title' => 'Correos por estatus', 'subtitle' => 'Activos e inactivos según el movimiento', 'data' => $emailChart],
+                ['title' => 'Sistemas por estado', 'subtitle' => 'Seguimiento del flujo operativo', 'data' => $systemChart],
+            ])
 
-            <div class="mt-4 space-y-3">
-                @forelse ($upcomingTasks as $task)
-                    <a href="{{ route('tasks.show', $task) }}"
-                        class="block rounded-2xl border border-white/10 p-4 transition hover:bg-white/5">
-                        <div class="flex items-center justify-between gap-3">
-                            <div>
-                                <p class="font-medium text-white">{{ $task->title }}</p>
-                                <p class="text-sm text-slate-400">
-                                    {{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha de vencimiento' }}</p>
-                            </div>
-                            <x-status-pill :label="$task->status->name" :tone="$task->status->slug" />
+            @foreach ($dashboardCharts as $chart)
+                <article class="app-card p-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white">{{ $chart['title'] }}</h3>
+                            <p class="mt-1 text-sm text-slate-400">{{ $chart['subtitle'] }}</p>
                         </div>
-                    </a>
-                @empty
-                    <p class="text-sm text-slate-400">No hay tareas registradas aún.</p>
-                @endforelse
-            </div>
-        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
+                            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Total</p>
+                            <p class="mt-2 text-2xl font-semibold text-white">{{ $chart['data']['total'] }}</p>
+                        </div>
+                    </div>
+
+                    @if ($chart['data']['items'] === [])
+                        <p class="mt-6 text-sm text-slate-400">{{ $chart['data']['emptyMessage'] }}</p>
+                    @else
+                        <div class="mt-6 space-y-4">
+                            @foreach ($chart['data']['items'] as $item)
+                                <div>
+                                    <div class="flex items-center justify-between gap-3 text-sm">
+                                        <span class="font-medium text-white">{{ $item['label'] }}</span>
+                                        <span class="text-slate-400">{{ $item['count'] }} · {{ $item['percentage'] }}%</span>
+                                    </div>
+                                    <div class="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
+                                        <div class="h-full rounded-full" style="width: {{ $item['width'] }}%; background-color: {{ $item['color'] }};"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </article>
+            @endforeach
+        </section>
+
+        <section class="grid gap-6 xl:grid-cols-3">
+            @php($monthlyCharts = [
+                ['title' => 'Tareas por mes', 'subtitle' => 'Altas registradas en los ultimos 6 meses', 'data' => $taskMonthlyChart],
+                ['title' => 'Correos por mes', 'subtitle' => 'Solicitudes registradas por mes', 'data' => $emailMonthlyChart],
+                ['title' => 'Sistemas por mes', 'subtitle' => 'Registros capturados por mes', 'data' => $systemMonthlyChart],
+            ])
+
+            @foreach ($monthlyCharts as $chart)
+                <article class="app-card p-6">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white">{{ $chart['title'] }}</h3>
+                            <p class="mt-1 text-sm text-slate-400">{{ $chart['subtitle'] }}</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
+                            <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Periodo</p>
+                            <p class="mt-2 text-sm font-semibold text-white">6 meses</p>
+                        </div>
+                    </div>
+
+                    @if (collect($chart['data']['items'])->sum('count') === 0)
+                        <p class="mt-6 text-sm text-slate-400">{{ $chart['data']['emptyMessage'] }}</p>
+                    @else
+                        <div class="mt-6 space-y-4">
+                            @foreach ($chart['data']['items'] as $item)
+                                <div>
+                                    <div class="flex items-center justify-between gap-3 text-sm">
+                                        <span class="font-medium text-white">{{ $item['label'] }}</span>
+                                        <span class="text-slate-400">{{ $item['count'] }}</span>
+                                    </div>
+                                    <div class="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
+                                        <div class="h-full rounded-full" style="width: {{ $item['width'] }}%; background-color: {{ $item['color'] }};"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </article>
+            @endforeach
+        </section>
     </div>
 </x-app-layout>

@@ -7,11 +7,15 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+    private const IMPERSONATOR_ID = 'impersonator_id';
+    private const IMPERSONATOR_NAME = 'impersonator_name';
+
     public function index(Request $request): View
     {
         abort_unless($request->user()->can('users.view'), 403);
@@ -95,5 +99,49 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('status', 'Usuario eliminado.');
+    }
+
+    public function impersonate(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->can('admin.access'), 403);
+
+        if ($request->session()->has(self::IMPERSONATOR_ID)) {
+            return back()->with('status', 'Ya tienes una sesión de acceso rápido activa. Regresa primero a tu cuenta.');
+        }
+
+        if ($request->user()->is($user)) {
+            return back()->with('status', 'Ya estás usando esta cuenta.');
+        }
+
+        if (! $user->is_active) {
+            return back()->with('status', 'No puedes acceder a una cuenta inactiva.');
+        }
+
+        $request->session()->put([
+            self::IMPERSONATOR_ID => $request->user()->id,
+            self::IMPERSONATOR_NAME => $request->user()->name,
+        ]);
+
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('dashboard')->with('status', 'Accediste rápidamente a la cuenta de '.$user->name.'.');
+    }
+
+    public function stopImpersonation(Request $request): RedirectResponse
+    {
+        $impersonatorId = $request->session()->get(self::IMPERSONATOR_ID);
+
+        abort_unless($impersonatorId, 403);
+
+        $impersonator = User::query()->find($impersonatorId);
+
+        abort_unless($impersonator !== null, 403);
+
+        Auth::login($impersonator);
+        $request->session()->forget([self::IMPERSONATOR_ID, self::IMPERSONATOR_NAME]);
+        $request->session()->regenerate();
+
+        return redirect()->route('admin.users.index')->with('status', 'Regresaste a tu cuenta de administrador.');
     }
 }

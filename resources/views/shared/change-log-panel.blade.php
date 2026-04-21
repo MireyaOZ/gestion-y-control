@@ -22,9 +22,9 @@
 
         <div class="mt-6 max-h-[70vh] space-y-3 overflow-y-auto pr-2">
             @forelse ($items as $log)
-                <div class="rounded-2xl border border-white/10 p-4">
+                <div class="rounded-2xl border border-white/10 border-l-4 border-l-sky-400 p-4">
                     <div class="mb-2 text-xs uppercase tracking-[0.2em] text-slate-400">{{ $log->localized_action }} · {{ optional($log->author)->name ?? 'Sistema' }} · {{ $log->created_at->format('d/m/Y H:i') }}</div>
-                    <div class="prose prose-invert max-w-none">{!! $log->content !!}</div>
+                    <div class="prose prose-invert max-w-none [overflow-wrap:anywhere] [&_a]:break-all [&_a]:[overflow-wrap:anywhere]">{!! $log->content !!}</div>
                 </div>
             @empty
                 <p class="text-sm text-slate-400">No hay cambios registrados.</p>

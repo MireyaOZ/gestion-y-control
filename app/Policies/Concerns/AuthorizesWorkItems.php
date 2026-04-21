@@ -26,6 +26,20 @@ trait AuthorizesWorkItems
         return $task->assignees->contains('id', $user->id);
     }
 
+    protected function isAssignedToTask(User $user, Task $task): bool
+    {
+        return $task->assignees->contains('id', $user->id);
+    }
+
+    protected function canManageTask(User $user, Task $task): bool
+    {
+        if ($this->isAdmin($user)) {
+            return true;
+        }
+
+        return $task->created_by === $user->id;
+    }
+
     protected function canAccessSubtask(User $user, Subtask $subtask): bool
     {
         if ($this->isAdmin($user)) {
@@ -40,6 +54,37 @@ trait AuthorizesWorkItems
             return true;
         }
 
+        if ($this->isAssignedToTask($user, $subtask->task)) {
+            return true;
+        }
+
         return $subtask->assignees->contains('id', $user->id);
+    }
+
+    protected function isAssignedToSubtask(User $user, Subtask $subtask): bool
+    {
+        return $subtask->assignees->contains('id', $user->id);
+    }
+
+    protected function canManageSubtask(User $user, Subtask $subtask): bool
+    {
+        if ($this->isAdmin($user)) {
+            return true;
+        }
+
+        if ($subtask->created_by === $user->id) {
+            return true;
+        }
+
+        return $subtask->task->created_by === $user->id;
+    }
+
+    protected function canContributeToSubtask(User $user, Subtask $subtask): bool
+    {
+        if ($this->canManageSubtask($user, $subtask)) {
+            return true;
+        }
+
+        return $this->isAssignedToSubtask($user, $subtask);
     }
 }

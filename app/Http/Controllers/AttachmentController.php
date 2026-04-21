@@ -114,11 +114,11 @@ class AttachmentController extends Controller
     protected function authorizeAction(Task|Subtask|SystemRecord $model): void
     {
         if ($model instanceof Task) {
-            $this->authorize('update', $model);
+            $this->authorize('manageResources', $model);
         } elseif ($model instanceof SystemRecord) {
             abort_unless(request()->user()?->can('systems.update'), 403);
         } else {
-            $this->authorize('update', $model);
+            $this->authorize('manageResources', $model);
         }
     }
 

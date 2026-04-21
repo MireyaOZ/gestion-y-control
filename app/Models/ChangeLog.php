@@ -15,6 +15,7 @@ class ChangeLog extends Model
         'created' => 'Creado',
         'updated' => 'Actualizado',
         'deleted' => 'Eliminado',
+        'subtask_added' => 'Subtarea agregada',
         'assigned' => 'Asignado',
         'status_changed' => 'Estado actualizado',
         'link_added' => 'Link agregado',

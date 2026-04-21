@@ -58,10 +58,6 @@ class LinkController extends Controller
 
     protected function authorizeAction(Task|Subtask $model): void
     {
-        if ($model instanceof Task) {
-            $this->authorize('update', $model);
-        } else {
-            $this->authorize('update', $model);
-        }
+        $this->authorize('manageResources', $model);
     }
 }

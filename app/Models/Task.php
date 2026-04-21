@@ -35,8 +35,8 @@ class Task extends Model
     {
         static::deleting(function (Task $task): void {
             $subtasks = $task->isForceDeleting()
-                ? $task->subtasks()->withTrashed()->get()
-                : $task->subtasks()->get();
+                ? $task->rootSubtasks()->withTrashed()->get()
+                : $task->rootSubtasks()->get();
 
             foreach ($subtasks as $subtask) {
                 if ($task->isForceDeleting()) {
@@ -50,7 +50,7 @@ class Task extends Model
         });
 
         static::restoring(function (Task $task): void {
-            foreach ($task->subtasks()->withTrashed()->get() as $subtask) {
+            foreach ($task->rootSubtasks()->withTrashed()->get() as $subtask) {
                 if ($subtask->trashed()) {
                     $subtask->restore();
                 }
@@ -85,6 +85,13 @@ class Task extends Model
         return $this->hasMany(Subtask::class)->latest();
     }
 
+    public function rootSubtasks(): HasMany
+    {
+        return $this->hasMany(Subtask::class)
+            ->whereNull('parent_subtask_id')
+            ->latest();
+    }
+
     public function getAssignmentElapsedAttribute(): ?string
     {
         $assignedAt = $this->assignees->sortByDesc('pivot.assigned_at')->first()?->pivot?->assigned_at;
@@ -94,5 +101,21 @@ class Task extends Model
         }
 
         return now()->diffForHumans($assignedAt, short: true, parts: 2);
+    }
+
+    public function getIsOverdueAttribute(): bool
+    {
+        return $this->due_date !== null
+            && $this->due_date->lt(today())
+            && ! in_array($this->status?->slug, ['completada', 'cancelada', 'rechazado'], true);
+    }
+
+    public function getOverdueDaysAttribute(): ?int
+    {
+        if (! $this->is_overdue) {
+            return null;
+        }
+
+        return (int) $this->due_date->diffInDays(today());
     }
 }

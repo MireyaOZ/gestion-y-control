@@ -23,10 +23,34 @@
 
     <div>
         <label class="app-label" for="priority_id">Prioridad</label>
-        <select id="priority_id" name="priority_id" class="app-input" required>
+        <select id="priority_id" name="priority_id" class="app-input priority-select" data-priority-select required>
             <option value="" @selected(old('priority_id', $task->priority_id ?? '') === '')>Seleccione</option>
             @foreach ($priorities as $priority)
-                <option value="{{ $priority->id }}" @selected(old('priority_id', $task->priority_id ?? '') == $priority->id)>{{ ucfirst($priority->name) }}</option>
+                @php
+                    $priorityStyle = match (\Illuminate\Support\Str::lower($priority->name)) {
+                        'baja' => 'background-color:#dcfce7;color:#15803d;',
+                        'media' => 'background-color:#fef3c7;color:#a16207;',
+                        'alta' => 'background-color:#fee2e2;color:#b91c1c;',
+                        'urgente' => 'background-color:#b91c1c;color:#ffffff;',
+                        default => 'background-color:#ffffff;color:#0f172a;',
+                    };
+
+                    $priorityTone = match (\Illuminate\Support\Str::lower($priority->name)) {
+                        'baja' => ['background' => '#dcfce7', 'border' => '#86efac', 'text' => '#15803d'],
+                        'media' => ['background' => '#fef3c7', 'border' => '#fcd34d', 'text' => '#a16207'],
+                        'alta' => ['background' => '#fee2e2', 'border' => '#fca5a5', 'text' => '#b91c1c'],
+                        'urgente' => ['background' => '#b91c1c', 'border' => '#7f1d1d', 'text' => '#ffffff'],
+                        default => ['background' => '#ffffff', 'border' => '#cbd5e1', 'text' => '#0f172a'],
+                    };
+                @endphp
+                <option
+                    value="{{ $priority->id }}"
+                    data-priority-background="{{ $priorityTone['background'] }}"
+                    data-priority-border="{{ $priorityTone['border'] }}"
+                    data-priority-text="{{ $priorityTone['text'] }}"
+                    style="{{ $priorityStyle }}"
+                    @selected(old('priority_id', $task->priority_id ?? '') == $priority->id)
+                >{{ ucfirst($priority->name) }}</option>
             @endforeach
         </select>
     </div>

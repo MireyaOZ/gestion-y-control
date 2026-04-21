@@ -32,7 +32,15 @@
                             <td class="px-4 py-3 text-slate-300">{{ $user->roles->pluck('name')->map(fn ($roleName) => \App\Support\PermissionCatalog::roleLabel($roleName))->join(', ') }}</td>
                             <td class="px-4 py-3 text-slate-300">{{ $user->is_active ? 'Activo' : 'Inactivo' }}</td>
                             <td class="px-4 py-3 text-right">
-                                <a href="{{ route('admin.users.edit', $user) }}" class="text-emerald-300">Editar</a>
+                                <div class="flex justify-end gap-3">
+                                    @if (auth()->user()?->can('admin.access') && ! session()->has('impersonator_id') && auth()->id() !== $user->id && $user->is_active)
+                                        <form method="POST" action="{{ route('admin.users.impersonate', $user) }}">
+                                            @csrf
+                                            <button type="submit" class="text-sky-300">Acceder</button>
+                                        </form>
+                                    @endif
+                                    <a href="{{ route('admin.users.edit', $user) }}" class="text-emerald-300">Editar</a>
+                                </div>
                             </td>
                         </tr>
                     @endforeach

@@ -4,9 +4,11 @@ namespace App\Models;
 
 use App\Models\Concerns\HasResources;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subtask extends Model
@@ -19,6 +21,7 @@ class Subtask extends Model
         'description',
         'due_date',
         'task_id',
+        'parent_subtask_id',
         'task_status_id',
         'priority_id',
         'created_by',
@@ -31,9 +34,56 @@ class Subtask extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Subtask $subtask): void {
+            $children = $subtask->isForceDeleting()
+                ? $subtask->childSubtasks()->withTrashed()->get()
+                : $subtask->childSubtasks()->get();
+
+            foreach ($children as $child) {
+                if ($subtask->isForceDeleting()) {
+                    $child->forceDelete();
+
+                    continue;
+                }
+
+                $child->delete();
+            }
+        });
+
+        static::restoring(function (Subtask $subtask): void {
+            foreach ($subtask->childSubtasks()->withTrashed()->get() as $child) {
+                if ($child->trashed()) {
+                    $child->restore();
+                }
+            }
+        });
+    }
+
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
+    }
+
+    public function parentSubtask(): BelongsTo
+    {
+        return $this->belongsTo(Subtask::class, 'parent_subtask_id');
+    }
+
+    public function childSubtasks(): HasMany
+    {
+        return $this->hasMany(Subtask::class, 'parent_subtask_id')->latest();
+    }
+
+    public function childSubtasksRecursive(): HasMany
+    {
+        return $this->childSubtasks()->with([
+            'status',
+            'priority',
+            'assignees',
+            'childSubtasksRecursive',
+        ]);
     }
 
     public function status(): BelongsTo
@@ -67,5 +117,33 @@ class Subtask extends Model
         }
 
         return now()->diffForHumans($assignedAt, short: true, parts: 2);
+    }
+
+    public function isDescendantOf(Subtask $candidateParent): bool
+    {
+        $ancestor = $this->parentSubtask;
+
+        while ($ancestor !== null) {
+            if ($ancestor->is($candidateParent)) {
+                return true;
+            }
+
+            $ancestor = $ancestor->parentSubtask;
+        }
+
+        return false;
+    }
+
+    public function ancestry(): Collection
+    {
+        $ancestors = collect();
+        $ancestor = $this->parentSubtask()->first();
+
+        while ($ancestor !== null) {
+            $ancestors->prepend($ancestor);
+            $ancestor = $ancestor->parentSubtask()->first();
+        }
+
+        return $ancestors;
     }
 }

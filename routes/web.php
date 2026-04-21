@@ -55,6 +55,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::prefix('admin')->name('admin.')->group(function () {
+        Route::post('users/{user}/impersonate', [UserController::class, 'impersonate'])->name('users.impersonate');
+        Route::post('users/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('users.stop-impersonation');
         Route::resource('users', UserController::class);
         Route::resource('roles', RoleController::class);
         Route::resource('permissions', PermissionController::class)->except(['show']);

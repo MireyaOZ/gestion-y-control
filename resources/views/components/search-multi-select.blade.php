@@ -4,8 +4,8 @@
     'selected' => [],
 ])
 
-<div x-data="searchMultiSelect({ endpoint: '{{ $endpoint }}', selected: @js($selected) })" class="space-y-3">
-    <div class="relative">
+<div x-data="searchMultiSelect({ endpoint: '{{ $endpoint }}', selected: @js($selected) })" class="space-y-3" @click.outside="open = false">
+    <div>
         <input
             type="text"
             class="app-input"
@@ -13,9 +13,10 @@
             x-model="query"
             @input.debounce.300ms="search"
             @focus="open = true"
+            @keydown.escape="open = false"
         >
 
-        <div x-show="open && results.length" class="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-[#960018]/15 bg-white shadow-xl shadow-slate-200/70">
+        <div x-cloak x-show="open && results.length" class="mt-2 max-h-56 w-full overflow-auto rounded-2xl border border-[#960018]/15 bg-white shadow-xl shadow-slate-200/70">
             <template x-for="item in results" :key="item.id">
                 <button type="button" class="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-[#960018]/5" @click="add(item)">
                     <span x-text="item.label"></span>

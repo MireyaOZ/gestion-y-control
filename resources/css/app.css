@@ -80,8 +80,8 @@ trix-toolbar .trix-button.trix-active {
 }
 
 trix-toolbar .trix-button::before {
-    opacity: 0.95;
-    filter: invert(92%) sepia(8%) saturate(260%) hue-rotate(182deg) brightness(102%) contrast(92%);
+    opacity: 1;
+    filter: invert(35%) sepia(10%) saturate(504%) hue-rotate(182deg) brightness(92%) contrast(92%);
 }
 
 trix-toolbar .trix-button.trix-active::before {

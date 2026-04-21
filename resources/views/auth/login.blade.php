@@ -61,12 +61,6 @@
                     <input id="remember_me" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#960018] focus:ring-[#960018]" name="remember">
                     <span>Recordarme</span>
                 </label>
-
-                @if (Route::has('password.request'))
-                    <a class="text-sm font-medium text-[#960018] transition hover:text-[#7c0014] hover:underline focus:outline-none focus:ring-2 focus:ring-[#960018] focus:ring-offset-2" href="{{ route('password.request') }}">
-                        Forgot
-                    </a>
-                @endif
             </div>
 
             <button class="app-button w-full" type="submit" style="color: #ffffff !important;">

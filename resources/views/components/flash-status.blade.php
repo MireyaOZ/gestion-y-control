@@ -1,4 +1,14 @@
-@if (session('status'))
+@php
+    $flashStatus = session('status');
+    $flashMessage = match ($flashStatus) {
+        'profile-updated' => 'La información del perfil se actualizó correctamente.',
+        'password-updated' => 'La contraseña se actualizó correctamente.',
+        'verification-link-sent' => 'Se envió un nuevo enlace de verificación a tu correo electrónico.',
+        default => $flashStatus,
+    };
+@endphp
+
+@if ($flashStatus)
     <div
         x-data="{ show: true }"
         x-init="setTimeout(() => show = false, 4000)"
@@ -11,6 +21,6 @@
         x-transition:leave-end="opacity-0 -translate-y-2"
         class="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
     >
-        {{ session('status') }}
+        {{ $flashMessage }}
     </div>
 @endif

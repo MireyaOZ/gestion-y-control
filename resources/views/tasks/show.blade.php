@@ -3,11 +3,18 @@
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-semibold text-white">{{ $task->title }}</h2>
-                <p class="text-sm text-white/80">Creada {{ $task->created_at->diffForHumans() }} · Tiempo desde asignación: {{ $task->assignment_elapsed ?: 'Sin asignar' }}</p>
+                <p class="text-sm text-white/80">Creada el {{ $task->created_at->format('d/m/Y') }} · Tiempo desde asignación: {{ $task->assignment_elapsed ?: 'Sin asignar' }}</p>
             </div>
             <div class="flex gap-3">
                 @can('update', $task)
-                    <a href="{{ route('tasks.edit', $task) }}" class="app-button-secondary">Editar</a>
+                    <a href="{{ route('tasks.edit', $task) }}" class="app-button-secondary border-amber-200 text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">Editar</a>
+                @endcan
+                @can('delete', $task)
+                    <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('¿Deseas eliminar esta tarea?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="app-button-secondary text-rose-600 hover:bg-rose-50">Eliminar</button>
+                    </form>
                 @endcan
             </div>
         </div>
@@ -22,7 +29,12 @@
                         <x-status-pill :label="$task->status->name" :tone="$task->status->slug" />
                     </div>
                 </div>
-                <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Prioridad</span><p class="mt-2 text-white">{{ $task->priority->name }}</p></div>
+                <div>
+                    <span class="text-xs uppercase tracking-[0.2em] text-slate-400">Prioridad</span>
+                    <div class="mt-2">
+                        <x-status-pill :label="$task->priority->name" />
+                    </div>
+                </div>
                 <div><span class="text-xs uppercase tracking-[0.2em] text-slate-400">Vencimiento</span><p class="mt-2 text-white">{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha' }}</p></div>
             </div>
             <div class="mt-6">
@@ -62,23 +74,12 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-white">Subtareas</h3>
                 @can('subtasks.create')
-                    <a href="{{ route('subtasks.create', ['task_id' => $task->id]) }}" class="app-button-light">Nueva subtarea</a>
+                    <a href="{{ route('subtasks.create', ['task_id' => $task->id]) }}" class="app-button-secondary">Nueva subtarea</a>
                 @endcan
             </div>
             <div class="mt-4 space-y-3">
-                @forelse ($task->subtasks as $subtask)
-                    <a href="{{ route('subtasks.show', $subtask) }}" class="block rounded-2xl border border-white/10 p-4 transition hover:bg-white/5">
-                        <div class="flex items-center justify-between gap-3">
-                            <div>
-                                <p class="font-medium text-white">{{ $subtask->title }}</p>
-                                <p class="text-sm text-slate-400">Vencimiento: {{ optional($subtask->due_date)->format('d/m/Y') ?: 'Sin vencimiento' }}</p>
-                                <p class="mt-1 text-sm text-slate-400">
-                                    {{ $subtask->assignees->isNotEmpty() ? 'Asignado a: '.$subtask->assignees->pluck('name')->join(', ') : 'Sin usuario asignado' }}
-                                </p>
-                            </div>
-                            <x-status-pill :label="$subtask->status->name" :tone="$subtask->status->slug" />
-                        </div>
-                    </a>
+                @forelse ($task->rootSubtasks as $subtask)
+                    @include('subtasks.tree-node', ['subtask' => $subtask, 'level' => 0])
                 @empty
                     <p class="text-sm text-slate-400">No hay subtareas registradas.</p>
                 @endforelse
@@ -94,6 +95,8 @@
             </div>
         </div>
 
-        @include('shared.comments-section', ['model' => $task, 'type' => 'task'])
+        @canany(['viewComments', 'comment'], $task)
+            @include('shared.comments-section', ['model' => $task, 'type' => 'task'])
+        @endcanany
     </div>
 </x-app-layout>

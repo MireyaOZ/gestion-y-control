@@ -12,7 +12,16 @@ class SearchController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user?->can('tasks.assign') || $user?->can('subtasks.assign'), 403);
+        $canSearchUsers = $user && (
+            $user->can('tasks.assign')
+            || $user->can('tasks.create')
+            || $user->can('tasks.update')
+            || $user->can('subtasks.assign')
+            || $user->can('subtasks.create')
+            || $user->can('subtasks.update')
+        );
+
+        abort_unless($canSearchUsers, 403);
 
         $query = (string) $request->string('query');
 
