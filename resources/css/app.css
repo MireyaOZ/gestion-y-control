@@ -88,6 +88,11 @@ trix-toolbar .trix-button.trix-active::before {
     filter: invert(11%) sepia(19%) saturate(714%) hue-rotate(178deg) brightness(92%) contrast(93%);
 }
 
+trix-toolbar [data-trix-attribute="href"],
+trix-toolbar [data-trix-action="attachFiles"] {
+    display: none;
+}
+
 trix-toolbar .trix-dialog {
     @apply rounded-2xl border border-slate-300 bg-white text-slate-900 shadow-xl;
 }

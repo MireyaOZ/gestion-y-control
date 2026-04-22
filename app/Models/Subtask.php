@@ -134,6 +134,22 @@ class Subtask extends Model
         return false;
     }
 
+    public function getIsOverdueAttribute(): bool
+    {
+        return $this->due_date !== null
+            && $this->due_date->lt(today())
+            && ! in_array($this->status?->slug, ['completada', 'cancelada', 'rechazado'], true);
+    }
+
+    public function getOverdueDaysAttribute(): ?int
+    {
+        if (! $this->is_overdue) {
+            return null;
+        }
+
+        return (int) $this->due_date->diffInDays(today());
+    }
+
     public function ancestry(): Collection
     {
         $ancestors = collect();

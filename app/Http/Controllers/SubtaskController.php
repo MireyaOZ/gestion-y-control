@@ -116,7 +116,7 @@ class SubtaskController extends Controller
         $originalDueDate = optional($subtask->due_date)->format('Y-m-d');
         $originalStatusName = $subtask->status?->name ?? 'Sin estado';
         $originalPriorityName = $subtask->priority?->name ?? 'Sin prioridad';
-        $originalParentTitle = $subtask->parentSubtask?->title;
+        $originalParentContext = $this->resolveParentContext($subtask);
         $originalAssignees = $subtask->assignees->pluck('name')->sort()->values()->all();
 
         $subtask->update($data);
@@ -130,7 +130,7 @@ class SubtaskController extends Controller
         $this->appendSubtaskChange($changes, 'Vencimiento', $this->formatSubtaskDate($originalDueDate), $this->formatSubtaskDate(optional($subtask->due_date)->format('Y-m-d')));
         $this->appendSubtaskChange($changes, 'Estado', $originalStatusName, $subtask->status?->name ?? 'Sin estado');
         $this->appendSubtaskChange($changes, 'Prioridad', $originalPriorityName, $subtask->priority?->name ?? 'Sin prioridad');
-        $this->appendSubtaskChange($changes, 'Subtarea superior', $originalParentTitle, $subtask->parentSubtask?->title, 'Sin subtarea superior');
+        $this->appendParentContextChange($changes, $originalParentContext, $this->resolveParentContext($subtask));
         $this->appendAssigneeChange($changes, $originalAssignees, $subtask->assignees->pluck('name')->sort()->values()->all());
 
         if ($changes !== []) {
@@ -214,14 +214,46 @@ class SubtaskController extends Controller
 
     protected function buildCreatedSubtaskLogContent(Subtask $subtask, string $authorName): string
     {
+        $parentContext = $this->resolveParentContext($subtask);
+
         return '<p>Subtarea creada por '.e($authorName).'.</p>'
             .'<p><strong>Título:</strong> '.e($subtask->title).'</p>'
             .'<p><strong>Descripción:</strong> '.e($subtask->description ?: 'Sin descripción').'</p>'
             .'<p><strong>Vencimiento:</strong> '.e(optional($subtask->due_date)->format('d/m/Y') ?: 'Sin fecha').'</p>'
-            .'<p><strong>Subtarea superior:</strong> '.e($subtask->parentSubtask?->title ?? 'Sin subtarea superior').'</p>'
+            .'<p><strong>'.e($parentContext['label']).':</strong> '.e($parentContext['value']).'</p>'
             .'<p><strong>Estado:</strong> '.e($subtask->status?->name ?? 'Sin estado').'</p>'
             .'<p><strong>Prioridad:</strong> '.e($subtask->priority?->name ?? 'Sin prioridad').'</p>'
             .'<p><strong>Asignados:</strong> '.e($subtask->assignees->isNotEmpty() ? $subtask->assignees->pluck('name')->join(', ') : 'Sin asignados').'</p>';
+    }
+
+    protected function resolveParentContext(Subtask $subtask): array
+    {
+        if ($subtask->parentSubtask !== null) {
+            return [
+                'label' => 'Subtarea superior',
+                'value' => $subtask->parentSubtask->title,
+            ];
+        }
+
+        return [
+            'label' => 'Tarea principal',
+            'value' => $subtask->task->title,
+        ];
+    }
+
+    protected function appendParentContextChange(array &$changes, array $originalContext, array $updatedContext): void
+    {
+        if ($originalContext === $updatedContext) {
+            return;
+        }
+
+        if ($originalContext['label'] === $updatedContext['label']) {
+            $this->appendSubtaskChange($changes, $updatedContext['label'], $originalContext['value'], $updatedContext['value']);
+
+            return;
+        }
+
+        $changes[] = '<p><strong>Relación superior:</strong> '.e($originalContext['label'].': '.$originalContext['value']).' '.self::CHANGE_ARROW.' '.e($updatedContext['label'].': '.$updatedContext['value']).'</p>';
     }
 
     protected function resolveParentSubtask(?int $parentSubtaskId): ?Subtask

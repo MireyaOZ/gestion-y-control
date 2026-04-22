@@ -74,25 +74,42 @@
             @endcan
         </section>
 
-        <section class="app-card p-6">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-lg font-semibold text-white">Subtareas hijas</h3>
-                    <p class="mt-1 text-sm text-slate-400">Puedes anidar nuevas subtareas dentro de esta subtarea.</p>
+        @if ($subtask->childSubtasksRecursive->isNotEmpty() || auth()->user()?->can('createChild', $subtask))
+            <section class="app-card p-6">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">Subtareas hijas</h3>
+                        <p class="mt-1 text-sm text-slate-400">Puedes anidar nuevas subtareas dentro de esta subtarea.</p>
+                    </div>
+                    @can('createChild', $subtask)
+                        <a href="{{ route('subtasks.create', ['task_id' => $subtask->task_id, 'parent_subtask_id' => $subtask->id]) }}" class="app-button-secondary">Agregar subtarea</a>
+                    @endcan
                 </div>
-                @can('createChild', $subtask)
-                    <a href="{{ route('subtasks.create', ['task_id' => $subtask->task_id, 'parent_subtask_id' => $subtask->id]) }}" class="app-button-secondary">Agregar hija</a>
-                @endcan
-            </div>
 
-            <div class="mt-4 space-y-3">
-                @forelse ($subtask->childSubtasksRecursive as $childSubtask)
-                    @include('subtasks.tree-node', ['subtask' => $childSubtask, 'level' => 0])
-                @empty
-                    <p class="text-sm text-slate-400">No hay subtareas hijas registradas.</p>
-                @endforelse
-            </div>
-        </section>
+                <div x-data="{ expanded: false }" class="mt-4 overflow-x-auto pb-2">
+                    <div class="min-w-full space-y-3">
+                        @forelse ($subtask->childSubtasksRecursive as $childSubtask)
+                            <div x-show="expanded || {{ $loop->index }} < 5" x-transition.opacity.duration.150ms>
+                                @include('subtasks.tree-node', ['subtask' => $childSubtask, 'level' => 0])
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-400">No hay subtareas hijas registradas.</p>
+                        @endforelse
+                    </div>
+
+                    @if ($subtask->childSubtasksRecursive->count() > 5)
+                        <div class="mt-4 flex justify-center">
+                            <button
+                                type="button"
+                                class="app-button-secondary"
+                                @click="expanded = !expanded"
+                                x-text="expanded ? 'Mostrar menos subtareas' : 'Ver más subtareas'"
+                            ></button>
+                        </div>
+                    @endif
+                </div>
+            </section>
+        @endif
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div class="space-y-6">

@@ -11,7 +11,7 @@
     @if ($parentContextSubtask)
         <div class="lg:col-span-2">
             <label class="app-label">Subtarea superior</label>
-            <div class="app-input flex min-h-12 items-center bg-slate-950/40 text-slate-200">
+            <div class="mt-1 flex min-h-12 w-full items-center rounded-2xl border border-slate-500 bg-slate-700 px-4 text-sm font-medium shadow-sm" style="color: #ffffff !important;">
                 {{ $parentContextSubtask->title }}
             </div>
         </div>
