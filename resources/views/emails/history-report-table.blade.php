@@ -12,7 +12,7 @@
         @forelse ($emailRequest->changeLogs as $log)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ $log->created_at->format('d/m/Y H:i') }}</td>
+                <td>{{ $log->created_at->format('d/m/Y') }}</td>
                 <td>{{ $log->localized_action }}</td>
                 <td>{{ optional($log->author)->name ?? 'Sistema' }}</td>
                 <td>{!! $log->report_content !!}</td>

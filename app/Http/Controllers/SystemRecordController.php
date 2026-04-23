@@ -51,6 +51,10 @@ class SystemRecordController extends Controller
         abort_unless($request->user()->can('systems.view'), 403);
 
         $search = (string) $request->string('search');
+        $selectedRequestDate = (string) $request->string('request_date');
+        $selectedRequestYear = (string) $request->string('request_year');
+        $selectedDateFrom = (string) $request->string('created_at_from');
+        $selectedDateTo = (string) $request->string('created_at_to');
 
         $systems = $this->buildFilteredSystemsQuery($request)
             ->withCount('attachments')
@@ -62,7 +66,16 @@ class SystemRecordController extends Controller
         $filenameBase = 'reporte-sistemas-'.$generatedAt->format('Ymd-His');
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('systems.report-pdf', compact('systems', 'generatedAt', 'reportTitle', 'search'))
+            $pdf = Pdf::loadView('systems.report-pdf', compact(
+                'systems',
+                'generatedAt',
+                'reportTitle',
+                'search',
+                'selectedRequestDate',
+                'selectedRequestYear',
+                'selectedDateFrom',
+                'selectedDateTo',
+            ))
                 ->setPaper('a4', 'landscape');
 
             return $pdf->download($filenameBase.'.pdf');
@@ -70,7 +83,16 @@ class SystemRecordController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('systems.report-excel', compact('systems', 'generatedAt', 'reportTitle', 'search'))->render();
+        $content = view('systems.report-excel', compact(
+            'systems',
+            'generatedAt',
+            'reportTitle',
+            'search',
+            'selectedRequestDate',
+            'selectedRequestYear',
+            'selectedDateFrom',
+            'selectedDateTo',
+        ))->render();
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',

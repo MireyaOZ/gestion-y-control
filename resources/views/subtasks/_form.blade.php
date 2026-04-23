@@ -19,7 +19,7 @@
 
     <div>
         <label class="app-label" for="title">Título</label>
-        <input id="title" name="title" type="text" class="app-input" value="{{ old('title', $subtask->title ?? '') }}" required>
+        <input id="title" name="title" type="text" class="app-input uppercase" value="{{ old('title', $subtask->title ?? '') }}" required>
     </div>
 
     <div>
@@ -73,7 +73,7 @@
 
     <div class="lg:col-span-2">
         <label class="app-label" for="description">Descripción</label>
-        <textarea id="description" name="description" rows="6" class="app-input">{{ old('description', $subtask->description ?? '') }}</textarea>
+        <textarea id="description" name="description" rows="6" class="app-input uppercase">{{ old('description', $subtask->description ?? '') }}</textarea>
     </div>
 
     <div class="lg:col-span-2">

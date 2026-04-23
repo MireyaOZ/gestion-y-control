@@ -71,7 +71,7 @@ class EmailRequestController extends Controller
         $filenameBase = 'reporte-correos-'.$generatedAt->format('Ymd-His');
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('emails.report-pdf', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedStatus', 'statusLabel', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))
+            $pdf = Pdf::loadView('emails.report-pdf', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedArea', 'selectedMovementType', 'selectedStatus', 'statusLabel', 'selectedDateFrom', 'selectedDateTo', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))
                 ->setPaper('a4', 'landscape');
 
             return $pdf->download($filenameBase.'.pdf');
@@ -79,7 +79,7 @@ class EmailRequestController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedStatus', 'statusLabel', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))->render();
+        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedArea', 'selectedMovementType', 'selectedStatus', 'statusLabel', 'selectedDateFrom', 'selectedDateTo', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))->render();
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',

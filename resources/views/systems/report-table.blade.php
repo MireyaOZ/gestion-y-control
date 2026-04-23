@@ -14,7 +14,7 @@
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $system->name }}</td>
                 <td>{{ $system->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
-                <td>{{ $system->created_at->format('d/m/Y H:i') }}</td>
+                <td>{{ $system->created_at->format('d/m/Y') }}</td>
                 <td>
                     {{ $system->status?->display_name ?? 'Sin estatus' }}
                     @if ($system->status?->isTesting())

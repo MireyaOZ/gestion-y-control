@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\HasResources;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -29,6 +30,22 @@ class Task extends Model
         return [
             'due_date' => 'date',
         ];
+    }
+
+    protected function title(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $this->normalizeUppercaseText($value),
+            set: fn (?string $value) => $this->normalizeUppercaseText($value),
+        );
+    }
+
+    protected function description(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $this->normalizeUppercaseText($value),
+            set: fn (?string $value) => $this->normalizeUppercaseText($value),
+        );
     }
 
     protected static function booted(): void
@@ -117,5 +134,14 @@ class Task extends Model
         }
 
         return (int) $this->due_date->diffInDays(today());
+    }
+
+    protected function normalizeUppercaseText(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return mb_strtoupper($value, 'UTF-8');
     }
 }

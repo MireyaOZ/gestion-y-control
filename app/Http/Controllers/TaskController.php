@@ -28,7 +28,11 @@ class TaskController extends Controller
         $selectedDueDate = (string) $request->string('due_date');
         $selectedStatusId = $request->integer('task_status_id');
         $selectedPriorityId = $request->integer('priority_id');
+        $selectedCreatorId = $request->integer('creator_id');
         $trackingView = $request->string('tracking_view')->toString();
+        $selectedCreator = $selectedCreatorId > 0
+            ? User::query()->find($selectedCreatorId)
+            : null;
 
         $tasks = $this->buildFilteredTasksQuery($request)
             ->with(['status', 'priority', 'creator', 'assignees'])
@@ -58,6 +62,8 @@ class TaskController extends Controller
             'selectedDueDate',
             'selectedStatusId',
             'selectedPriorityId',
+            'selectedCreatorId',
+            'selectedCreator',
             'trackingView',
             'overdueCount',
             'tasksWithDueDateCount',
@@ -77,8 +83,26 @@ class TaskController extends Controller
         $this->authorize('viewAny', Task::class);
 
         $search = (string) $request->string('search');
+        $selectedCreatedDate = (string) $request->string('created_at');
+        $selectedDueDate = (string) $request->string('due_date');
+        $selectedStatusId = $request->integer('task_status_id');
+        $selectedPriorityId = $request->integer('priority_id');
+        $selectedCreatorId = $request->integer('creator_id');
+        $trackingView = $request->string('tracking_view')->toString();
         $reportView = $request->string('view', 'table')->toString();
         abort_unless(in_array($reportView, ['table', 'list'], true), 404);
+
+        $selectedStatus = $selectedStatusId > 0
+            ? TaskStatus::query()->find($selectedStatusId)
+            : null;
+
+        $selectedPriority = $selectedPriorityId > 0
+            ? Priority::query()->find($selectedPriorityId)
+            : null;
+
+        $selectedCreator = $selectedCreatorId > 0
+            ? User::query()->find($selectedCreatorId)
+            : null;
 
         $tasks = $this->buildFilteredTasksQuery($request)
             ->with(['status', 'priority', 'creator', 'assignees'])
@@ -90,7 +114,19 @@ class TaskController extends Controller
         $filenameBase = 'reporte-tareas-'.$reportView.'-'.$generatedAt->format('Ymd-His');
 
         if ($format === 'pdf') {
-            $pdf = Pdf::loadView('tasks.report-pdf', compact('tasks', 'generatedAt', 'reportTitle', 'search', 'reportView'))
+            $pdf = Pdf::loadView('tasks.report-pdf', compact(
+                'tasks',
+                'generatedAt',
+                'reportTitle',
+                'search',
+                'reportView',
+                'selectedCreatedDate',
+                'selectedDueDate',
+                'selectedStatus',
+                'selectedPriority',
+                'selectedCreator',
+                'trackingView',
+            ))
                 ->setPaper('a4', $reportView === 'table' ? 'landscape' : 'portrait');
 
             return $pdf->download($filenameBase.'.pdf');
@@ -98,13 +134,47 @@ class TaskController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('tasks.report-excel', compact('tasks', 'generatedAt', 'reportTitle', 'search', 'reportView'))->render();
+        $content = view('tasks.report-excel', compact(
+            'tasks',
+            'generatedAt',
+            'reportTitle',
+            'search',
+            'reportView',
+            'selectedCreatedDate',
+            'selectedDueDate',
+            'selectedStatus',
+            'selectedPriority',
+            'selectedCreator',
+            'trackingView',
+        ))->render();
 
         return response($content, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
             'Cache-Control' => 'max-age=0',
         ]);
+    }
+
+    public function hierarchyReport(Task $task): Response
+    {
+        $this->authorize('view', $task);
+
+        $task->load([
+            'creator',
+            'rootSubtasks.childSubtasksRecursive',
+        ]);
+
+        $generatedAt = now();
+        $reportTitle = 'Reporte jerárquico de tarea';
+        $filename = 'tarea-jerarquia-'.$task->id.'-'.$generatedAt->format('Ymd-His').'.pdf';
+
+        $pdf = Pdf::loadView('tasks.hierarchy-report-pdf', compact(
+            'task',
+            'generatedAt',
+            'reportTitle',
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->download($filename);
     }
 
     public function store(Request $request): RedirectResponse
@@ -253,13 +323,15 @@ class TaskController extends Controller
         $selectedDueDate = (string) $request->string('due_date');
         $selectedStatusId = $request->integer('task_status_id');
         $selectedPriorityId = $request->integer('priority_id');
+        $selectedCreatorId = $request->integer('creator_id');
 
         return $this->buildVisibleTasksQuery($request)
             ->when($search !== '', fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->when($selectedCreatedDate !== '', fn ($query) => $query->whereDate('created_at', $selectedCreatedDate))
             ->when($selectedDueDate !== '', fn ($query) => $query->whereDate('due_date', $selectedDueDate))
             ->when($selectedStatusId > 0, fn ($query) => $query->where('task_status_id', $selectedStatusId))
-            ->when($selectedPriorityId > 0, fn ($query) => $query->where('priority_id', $selectedPriorityId));
+            ->when($selectedPriorityId > 0, fn ($query) => $query->where('priority_id', $selectedPriorityId))
+            ->when($selectedCreatorId > 0, fn ($query) => $query->where('created_by', $selectedCreatorId));
     }
 
     protected function buildOverdueTasksQuery(Request $request): Builder

@@ -93,6 +93,18 @@
                         </select>
                     </div>
 
+                    <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                        <label class="app-label">Creador</label>
+                        <x-search-select
+                            name="creator_id"
+                            :endpoint="route('search.users')"
+                            :selected-id="$selectedCreatorId > 0 ? $selectedCreatorId : null"
+                            :selected-label="$selectedCreator?->name ?? ''"
+                            placeholder="Buscar creador por nombre o correo..."
+                        />
+                        <p class="mt-2 text-xs text-slate-500">Filtra las tareas por el usuario que las creó.</p>
+                    </div>
+
                     <div class="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-between">
                         <a href="{{ route('tasks.index') }}" class="app-button-secondary justify-center">Limpiar</a>
                         <button type="submit" class="app-button justify-center" style="color: #ffffff !important;" @click="showFilters = false">Aplicar filtros</button>
@@ -100,7 +112,7 @@
                 </div>
             </div>
 
-            @if ($search !== '' || $selectedCreatedDate !== '' || $selectedDueDate !== '' || $selectedStatusId > 0 || $selectedPriorityId > 0 || $trackingView !== '')
+            @if ($search !== '' || $selectedCreatedDate !== '' || $selectedDueDate !== '' || $selectedStatusId > 0 || $selectedPriorityId > 0 || $selectedCreatorId > 0 || $trackingView !== '')
                 <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
                     @if ($search !== '')
                         <span>Búsqueda: <span class="font-semibold text-slate-900">{{ $search }}</span></span>
@@ -117,6 +129,9 @@
                     @if ($selectedPriorityId > 0)
                         <span>Prioridad: <span class="font-semibold text-slate-900">{{ optional($priorities->firstWhere('id', $selectedPriorityId))->name ? ucfirst(optional($priorities->firstWhere('id', $selectedPriorityId))->name) : 'Sin prioridad' }}</span></span>
                     @endif
+                    @if ($selectedCreatorId > 0)
+                        <span>Creador: <span class="font-semibold text-slate-900">{{ $selectedCreator?->name ?? 'Sin creador' }}</span></span>
+                    @endif
                     @if ($trackingView === 'overdue')
                         <span>Vista: <span class="font-semibold text-rose-700">Tareas vencidas</span></span>
                     @elseif ($trackingView === 'due-date')
@@ -129,10 +144,10 @@
         </form>
 
         <div class="flex flex-wrap gap-3">
-            <a href="{{ route('tasks.report', ['format' => 'excel', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'tracking_view' => $trackingView ?: null, 'view' => 'table']) }}" class="app-button-secondary">Excel tabla</a>
-            <a href="{{ route('tasks.report', ['format' => 'excel', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'tracking_view' => $trackingView ?: null, 'view' => 'list']) }}" class="app-button-secondary">Excel lista</a>
-            <a href="{{ route('tasks.report', ['format' => 'pdf', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'tracking_view' => $trackingView ?: null, 'view' => 'table']) }}" class="app-button-secondary">PDF tabla</a>
-            <a href="{{ route('tasks.report', ['format' => 'pdf', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'tracking_view' => $trackingView ?: null, 'view' => 'list']) }}" class="app-button-secondary">PDF lista</a>
+            <a href="{{ route('tasks.report', ['format' => 'excel', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'creator_id' => $selectedCreatorId, 'tracking_view' => $trackingView ?: null, 'view' => 'table']) }}" class="app-button-secondary">Excel tabla</a>
+            <a href="{{ route('tasks.report', ['format' => 'excel', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'creator_id' => $selectedCreatorId, 'tracking_view' => $trackingView ?: null, 'view' => 'list']) }}" class="app-button-secondary">Excel lista</a>
+            <a href="{{ route('tasks.report', ['format' => 'pdf', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'creator_id' => $selectedCreatorId, 'tracking_view' => $trackingView ?: null, 'view' => 'table']) }}" class="app-button-secondary">PDF tabla</a>
+            <a href="{{ route('tasks.report', ['format' => 'pdf', 'search' => $search, 'created_at' => $selectedCreatedDate, 'due_date' => $selectedDueDate, 'task_status_id' => $selectedStatusId, 'priority_id' => $selectedPriorityId, 'creator_id' => $selectedCreatorId, 'tracking_view' => $trackingView ?: null, 'view' => 'list']) }}" class="app-button-secondary">PDF lista</a>
         </div>
 
         @php($trackingQuery = request()->except('page', 'tracking_view'))
@@ -221,15 +236,23 @@
                 <a href="{{ route('tasks.show', $task) }}" class="app-card block p-6 transition hover:-translate-y-1 hover:border-emerald-400/40">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <h3 class="text-lg font-semibold text-white">{{ $task->title }}</h3>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="text-lg font-semibold text-white">{{ $task->title }}</h3>
+                                @if ($task->subtasks_count > 0)
+                                    <span class="rounded-full border border-slate-200 px-2 py-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                                        {{ $task->subtasks_count }} {{ \Illuminate\Support\Str::plural('subtarea', $task->subtasks_count) }}
+                                    </span>
+                                @endif
+                            </div>
                             <p class="mt-1 text-sm text-slate-400">Creada: {{ $task->created_at->format('d/m/Y') }}</p>
                             <p class="mt-1 text-sm text-slate-400">Vencimiento: {{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha de vencimiento' }}</p>
                             @if ($task->is_overdue)
                                 <p class="mt-1 text-sm font-semibold text-rose-300">Vencida hace {{ $task->overdue_days }} {{ \Illuminate\Support\Str::plural('día', $task->overdue_days) }}</p>
                             @elseif ($task->due_date?->isToday())
                                 <p class="mt-1 text-sm font-semibold text-amber-300">Vence hoy</p>
+                            @elseif ($task->due_date?->isTomorrow())
+                                <p class="mt-1 text-sm font-semibold text-sky-300">Vence mañana</p>
                             @endif
-                            <p class="mt-1 text-sm text-slate-500">Subtareas: {{ $task->subtasks_count }} {{ \Illuminate\Support\Str::plural('subtarea', $task->subtasks_count) }}</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <x-status-pill :label="$task->status->name" :tone="$task->status->slug" />

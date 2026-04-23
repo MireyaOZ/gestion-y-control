@@ -11,13 +11,21 @@
     </thead>
     <tbody>
         @forelse ($system->changeLogs as $log)
+            @php
+                $reportContent = preg_replace(
+                    '/<p>Sistema (?:actualizado|registrado|eliminado) por .*?<\/p>/is',
+                    '',
+                    $log->rendered_content,
+                    1,
+                );
+            @endphp
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ $log->created_at->format('d/m/Y H:i') }}</td>
+                <td>{{ $log->created_at->format('d/m/Y') }}</td>
                 <td>{{ $log->localized_action }}</td>
                 <td>{{ optional($log->author)->name ?? 'Sistema' }}</td>
                 <td>{{ $log->status_group }}</td>
-                <td>{!! $log->rendered_content !!}</td>
+                <td>{!! $reportContent !!}</td>
             </tr>
         @empty
             <tr>

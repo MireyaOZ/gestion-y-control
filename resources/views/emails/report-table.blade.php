@@ -23,7 +23,7 @@
                 <td>{{ $emailRequest->cargo?->parent_name ?? 'Sin superior' }}</td>
                 <td>{{ $emailRequest->movementType->name }}</td>
                 <td>{{ $emailRequest->operational_status }}</td>
-                <td>{{ $emailRequest->created_at->format('d/m/Y H:i') }}</td>
+                <td>{{ $emailRequest->created_at->format('d/m/Y') }}</td>
             </tr>
         @empty
             <tr>

@@ -13,6 +13,9 @@ class SearchController extends Controller
         $user = $request->user();
 
         $canSearchUsers = $user && (
+            $user->can('tasks.view')
+            || $user->can('subtasks.view')
+            ||
             $user->can('tasks.assign')
             || $user->can('tasks.create')
             || $user->can('tasks.update')

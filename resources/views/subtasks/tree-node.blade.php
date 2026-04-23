@@ -46,6 +46,8 @@
                         <p class="mt-1 text-sm font-semibold text-rose-300">Vencida hace {{ $subtask->overdue_days }} {{ \Illuminate\Support\Str::plural('día', $subtask->overdue_days) }}</p>
                     @elseif ($subtask->due_date?->isToday())
                         <p class="mt-1 text-sm font-semibold text-amber-300">Vence hoy</p>
+                    @elseif ($subtask->due_date?->isTomorrow())
+                        <p class="mt-1 text-sm font-semibold text-sky-300">Vence mañana</p>
                     @endif
                     <p class="mt-1 text-sm text-slate-400">
                         {{ $subtask->assignees->isNotEmpty() ? 'Asignado a: '.$subtask->assignees->pluck('name')->join(', ') : 'Sin usuario asignado' }}

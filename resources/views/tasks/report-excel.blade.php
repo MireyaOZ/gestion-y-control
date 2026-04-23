@@ -20,8 +20,31 @@
     <h1>{{ $reportTitle }}</h1>
 
     <div class="meta">
-        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y H:i') }}</p>
+        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y') }}</p>
         <p><strong>Vista seleccionada:</strong> {{ $reportView === 'table' ? 'Tabla' : 'Lista' }}</p>
+        @if (($selectedCreatedDate ?? '') !== '')
+            <p><strong>Fecha de creación:</strong> {{ \Carbon\Carbon::parse($selectedCreatedDate)->format('d/m/Y') }}</p>
+        @endif
+        @if (($selectedDueDate ?? '') !== '')
+            <p><strong>Fecha de vencimiento:</strong> {{ \Carbon\Carbon::parse($selectedDueDate)->format('d/m/Y') }}</p>
+        @endif
+        @if ($selectedStatus)
+            <p><strong>Estatus:</strong> {{ $selectedStatus->name }}</p>
+        @endif
+        @if ($selectedPriority)
+            <p><strong>Prioridad:</strong> {{ $selectedPriority->name }}</p>
+        @endif
+        @if ($selectedCreator)
+            <p><strong>Creador:</strong> {{ $selectedCreator->name }}</p>
+        @endif
+        @if (($trackingView ?? '') !== '')
+            <p><strong>Vista de seguimiento:</strong> {{ match ($trackingView) {
+                'overdue' => 'TAREAS VENCIDAS',
+                'due-date' => 'TAREAS CON FECHA DE TÉRMINO',
+                'upcoming' => 'PRÓXIMAS TAREAS',
+                default => $trackingView,
+            } }}</p>
+        @endif
         @if ($search !== '')
             <p><strong>Búsqueda aplicada:</strong> {{ $search }}</p>
         @endif

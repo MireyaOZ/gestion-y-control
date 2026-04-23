@@ -113,13 +113,13 @@
             @if (($selectedRequestDate ?? '') !== '' || ($selectedRequestYear ?? '') !== '' || ($selectedDateFrom ?? '') !== '' || ($selectedDateTo ?? '') !== '' || ($search ?? '') !== '')
                 <div class="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
                     @if (($selectedRequestDate ?? '') !== '')
-                        <span>Fecha de solicitud: <span class="font-semibold text-slate-900">{{ $selectedRequestDate }}</span></span>
+                        <span>Fecha de solicitud: <span class="font-semibold text-slate-900">{{ \Carbon\Carbon::parse($selectedRequestDate)->format('d/m/Y') }}</span></span>
                     @endif
                     @if (($selectedRequestYear ?? '') !== '')
                         <span>Año de solicitud: <span class="font-semibold text-slate-900">{{ $selectedRequestYear }}</span></span>
                     @endif
                     @if (($selectedDateFrom ?? '') !== '' || ($selectedDateTo ?? '') !== '')
-                        <span>Fecha de creación: <span class="font-semibold text-slate-900">{{ ($selectedDateFrom ?? '') !== '' ? $selectedDateFrom : 'Sin inicio' }} - {{ ($selectedDateTo ?? '') !== '' ? $selectedDateTo : 'Sin fin' }}</span></span>
+                        <span>Fecha de creación: <span class="font-semibold text-slate-900">{{ ($selectedDateFrom ?? '') !== '' ? \Carbon\Carbon::parse($selectedDateFrom)->format('d/m/Y') : 'Sin inicio' }} - {{ ($selectedDateTo ?? '') !== '' ? \Carbon\Carbon::parse($selectedDateTo)->format('d/m/Y') : 'Sin fin' }}</span></span>
                     @endif
                     @if (($search ?? '') !== '')
                         <span>Búsqueda: <span class="font-semibold text-slate-900">{{ $search }}</span></span>
@@ -133,27 +133,27 @@
             <a href="{{ route('systems.report', ['format' => 'pdf', 'search' => $search ?? '', 'request_date' => $selectedRequestDate ?? '', 'request_year' => $selectedRequestYear ?? '', 'created_at_from' => $selectedDateFrom ?? '', 'created_at_to' => $selectedDateTo ?? '']) }}" class="app-button-secondary">Descargar PDF</a>
         </div>
 
-        <div class="app-card overflow-hidden">
-            <table class="min-w-full text-sm">
+        <div class="app-card overflow-x-auto overflow-y-hidden">
+            <table class="min-w-[1460px] table-auto text-sm">
                 <thead class="bg-slate-50 text-left text-slate-500">
                     <tr>
-                        <th class="px-4 py-3">Nombre del sistema</th>
-                        <th class="px-4 py-3">Fecha de solicitud</th>
-                        <th class="px-4 py-3">Fecha de creación</th>
-                        <th class="px-4 py-3">Link de interés</th>
-                        <th class="px-4 py-3">Estatus</th>
-                        <th class="px-4 py-3">Trello</th>
-                        <th class="px-4 py-3">Historial de cambios</th>
-                        <th class="px-4 py-3 text-right">Acciones</th>
+                        <th class="min-w-[280px] px-4 py-3">Nombre del sistema</th>
+                        <th class="min-w-[170px] px-4 py-3">Fecha de solicitud</th>
+                        <th class="min-w-[190px] px-4 py-3">Fecha de creación</th>
+                        <th class="min-w-[150px] px-4 py-3">Link de interés</th>
+                        <th class="min-w-[320px] px-4 py-3">Estatus</th>
+                        <th class="min-w-[150px] px-4 py-3">Trello</th>
+                        <th class="min-w-[190px] px-4 py-3">Historial de cambios</th>
+                        <th class="min-w-[210px] px-4 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($systems as $system)
                         <tr class="border-t border-slate-200">
-                            <td class="px-4 py-3 font-medium text-slate-900">{{ $system->name }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $system->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
-                            <td class="px-4 py-3 text-slate-600">{{ $system->created_at->format('d/m/Y H:i') }}</td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 font-medium leading-7 text-slate-900">{{ $system->name }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-600">{{ $system->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-600">{{ $system->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">
                                 @if ($system->links->isNotEmpty())
                                     <a href="{{ $system->links->first()->url }}" target="_blank" class="inline-flex text-sm text-[#960018] hover:underline">
                                         Abrir link
@@ -162,7 +162,7 @@
                                     <span class="text-slate-400">Sin link</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">
                                 <div>{{ $system->status?->display_name ?? 'Sin estatus' }}</div>
                                 @if ($system->status?->isTesting())
                                     <div class="mt-2 space-y-1 text-xs text-slate-500">
@@ -174,7 +174,7 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 leading-7 text-slate-700">
                                 @if ($system->trello_url)
                                     <a href="{{ $system->trello_url }}" target="_blank" class="inline-flex text-sm text-[#960018] hover:underline">
                                         Abrir Trello
@@ -183,13 +183,13 @@
                                     <span class="text-slate-400">Sin Trello</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-slate-700">
+                            <td class="align-top px-4 py-4 text-slate-700">
                                 <button class="app-button-secondary" type="button" x-data @click="$dispatch('open-modal', 'history-system-record-{{ $system->id }}')">
                                     Ver historial
                                 </button>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="flex justify-end gap-2">
+                            <td class="align-top px-4 py-4">
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
                                     @can('systems.update')
                                         <button class="app-button-secondary" type="button" x-data @click="$dispatch('open-modal', 'edit-system-record-{{ $system->id }}')">
                                             Editar
@@ -209,7 +209,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-6 text-center text-slate-500">No hay sistemas registrados.</td>
+                            <td colspan="8" class="px-4 py-6 text-center text-slate-500">No hay sistemas registrados.</td>
                         </tr>
                     @endforelse
                 </tbody>

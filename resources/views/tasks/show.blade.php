@@ -6,6 +6,9 @@
                 <p class="text-sm text-white/80">Creada el {{ $task->created_at->format('d/m/Y') }} · Tiempo desde asignación: {{ $task->assignment_elapsed ?: 'Sin asignar' }}</p>
             </div>
             <div class="flex gap-3">
+                @if ($task->rootSubtasks->isNotEmpty())
+                    <a href="{{ route('tasks.hierarchy.report', $task) }}" class="app-button-secondary">Reporte PDF</a>
+                @endif
                 @can('update', $task)
                     <a href="{{ route('tasks.edit', $task) }}" class="app-button-secondary border-amber-200 text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">Editar</a>
                 @endcan

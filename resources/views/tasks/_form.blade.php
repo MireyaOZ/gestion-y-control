@@ -3,7 +3,7 @@
 <div class="grid gap-6 lg:grid-cols-2">
     <div>
         <label class="app-label" for="title">Título</label>
-        <input id="title" name="title" type="text" class="app-input" value="{{ old('title', $task->title ?? '') }}" required>
+        <input id="title" name="title" type="text" class="app-input uppercase" value="{{ old('title', $task->title ?? '') }}" required>
     </div>
 
     <div>
@@ -57,7 +57,7 @@
 
     <div class="lg:col-span-2">
         <label class="app-label" for="description">Descripción</label>
-        <textarea id="description" name="description" rows="6" class="app-input">{{ old('description', $task->description ?? '') }}</textarea>
+        <textarea id="description" name="description" rows="6" class="app-input uppercase">{{ old('description', $task->description ?? '') }}</textarea>
     </div>
 
     <div class="lg:col-span-2">

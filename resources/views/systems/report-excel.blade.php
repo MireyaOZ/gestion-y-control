@@ -17,9 +17,18 @@
     <h1>{{ $reportTitle }}</h1>
 
     <div class="meta">
-        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y H:i') }}</p>
+        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y') }}</p>
         @if ($search !== '')
             <p><strong>Búsqueda aplicada:</strong> {{ $search }}</p>
+        @endif
+        @if (($selectedRequestDate ?? '') !== '')
+            <p><strong>Fecha de solicitud:</strong> {{ \Carbon\Carbon::parse($selectedRequestDate)->format('d/m/Y') }}</p>
+        @endif
+        @if (($selectedRequestYear ?? '') !== '')
+            <p><strong>Año de solicitud:</strong> {{ $selectedRequestYear }}</p>
+        @endif
+        @if (($selectedDateFrom ?? '') !== '' || ($selectedDateTo ?? '') !== '')
+            <p><strong>Fecha de creación:</strong> {{ ($selectedDateFrom ?? '') !== '' ? \Carbon\Carbon::parse($selectedDateFrom)->format('d/m/Y') : 'Sin inicio' }} - {{ ($selectedDateTo ?? '') !== '' ? \Carbon\Carbon::parse($selectedDateTo)->format('d/m/Y') : 'Sin fin' }}</p>
         @endif
     </div>
 

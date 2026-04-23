@@ -18,14 +18,26 @@
     <h1>{{ $reportTitle }}</h1>
 
     <div class="meta">
-        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y H:i') }}</p>
-        <p><strong>Área filtrada:</strong> {{ $areaLabel }}</p>
-        <p><strong>Área superior:</strong> {{ $parentAreaLabel }}</p>
-        <p><strong>Tipo de movimiento:</strong> {{ $movementTypeLabel }}</p>
-        <p><strong>Estatus filtrado:</strong> {{ $statusLabel }}</p>
-        <p><strong>Fecha de solicitud filtrada:</strong> {{ $requestDateLabel }}</p>
-        <p><strong>Año de solicitud filtrado:</strong> {{ $requestYearLabel }}</p>
-        <p><strong>Fecha filtrada:</strong> {{ $dateLabel === 'Todas las fechas' ? $dateLabel : $dateLabel }}</p>
+        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y') }}</p>
+        @if ($selectedArea)
+            <p><strong>Área filtrada:</strong> {{ $areaLabel }}</p>
+            <p><strong>Área superior:</strong> {{ $parentAreaLabel }}</p>
+        @endif
+        @if ($selectedMovementType)
+            <p><strong>Tipo de movimiento:</strong> {{ $movementTypeLabel }}</p>
+        @endif
+        @if ($selectedStatus)
+            <p><strong>Estatus filtrado:</strong> {{ $statusLabel }}</p>
+        @endif
+        @if ($selectedRequestDate)
+            <p><strong>Fecha de solicitud filtrada:</strong> {{ \Carbon\Carbon::parse($selectedRequestDate)->format('d/m/Y') }}</p>
+        @endif
+        @if ($selectedRequestYear)
+            <p><strong>Año de solicitud filtrado:</strong> {{ $requestYearLabel }}</p>
+        @endif
+        @if ($selectedDateFrom || $selectedDateTo)
+            <p><strong>Fecha filtrada:</strong> {{ $selectedDateFrom ? \Carbon\Carbon::parse($selectedDateFrom)->format('d/m/Y') : 'Sin inicio' }} - {{ $selectedDateTo ? \Carbon\Carbon::parse($selectedDateTo)->format('d/m/Y') : 'Sin fin' }}</p>
+        @endif
         @if ($search !== '')
             <p><strong>Búsqueda aplicada:</strong> {{ $search }}</p>
         @endif

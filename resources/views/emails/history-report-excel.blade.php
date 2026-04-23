@@ -18,7 +18,7 @@
     <h1>{{ $reportTitle }}</h1>
 
     <div class="meta">
-        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y H:i') }}</p>
+        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y') }}</p>
         <p><strong>Fecha de solicitud:</strong> {{ $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha' }}</p>
         <p><strong>Nombre:</strong> {{ $emailRequest->name }}</p>
         <p><strong>Correo:</strong> {{ $emailRequest->email }}</p>
