@@ -18,7 +18,7 @@ class SystemStatus extends Model
 
     public function isTesting(): bool
     {
-        return in_array($this->slug, ['en-pruebas', 'en-pruebas-internas'], true);
+        return $this->slug === 'en-pruebas';
     }
 
     public function getDisplayNameAttribute(): string

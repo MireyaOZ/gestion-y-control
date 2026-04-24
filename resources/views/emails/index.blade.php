@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <form method="GET" class="app-card relative p-4" x-data="{ showFilters: false }" @keydown.escape.window="showFilters = false">
+        <form method="GET" class="app-card relative p-4" x-data="filterDrawer()" @keydown.escape.window="close()">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div class="flex-1">
                     <input
@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="app-button-secondary" @click="showFilters = !showFilters" :aria-expanded="showFilters.toString()">
+                    <button type="button" class="app-button-secondary" @click="toggle()" :aria-expanded="open.toString()">
                         <svg class="mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M2.5 4.75A1.25 1.25 0 0 1 3.75 3.5h12.5a1.25 1.25 0 0 1 .97 2.04L12 11.95v3.55a1.25 1.25 0 0 1-.61 1.07l-2 1.2A1.25 1.25 0 0 1 7.5 16.7v-4.75L2.78 5.54a1.25 1.25 0 0 1-.28-.79Z" clip-rule="evenodd" />
                         </svg>
@@ -47,11 +47,11 @@
                 </div>
             </div>
 
-            <div x-cloak x-show="showFilters" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="showFilters = false"></div>
+            <div x-cloak x-show="open" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="close()"></div>
 
             <div
                 x-cloak
-                x-show="showFilters"
+                x-show="open"
                 x-transition:enter="transform transition ease-out duration-300"
                 x-transition:enter-start="translate-x-full opacity-0"
                 x-transition:enter-end="translate-x-0 opacity-100"
@@ -66,7 +66,7 @@
                             <h3 class="text-lg font-semibold text-slate-900">Filtros de correos</h3>
                             <p class="mt-1 text-sm text-slate-500">Ajusta la búsqueda desde este panel lateral.</p>
                         </div>
-                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="showFilters = false">
+                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="close()">
                             Cerrar
                         </button>
                     </div>

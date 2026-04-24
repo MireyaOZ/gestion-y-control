@@ -32,7 +32,7 @@
             </div>
         @endif
 
-        <form method="GET" class="app-card relative p-4" x-data="{ showFilters: false }" @keydown.escape.window="showFilters = false">
+        <form method="GET" class="app-card relative p-4" x-data="filterDrawer()" @keydown.escape.window="close()">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div class="flex-1">
                     <input
@@ -45,7 +45,7 @@
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="app-button-secondary" @click="showFilters = true" :aria-expanded="showFilters.toString()">
+                    <button type="button" class="app-button-secondary" @click="show()" :aria-expanded="open.toString()">
                         <svg class="mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M2.5 4.75A1.25 1.25 0 0 1 3.75 3.5h12.5a1.25 1.25 0 0 1 .97 2.04L12 11.95v3.55a1.25 1.25 0 0 1-.61 1.07l-2 1.2A1.25 1.25 0 0 1 7.5 16.7v-4.75L2.78 5.54a1.25 1.25 0 0 1-.28-.79Z" clip-rule="evenodd" />
                         </svg>
@@ -55,11 +55,11 @@
                 </div>
             </div>
 
-            <div x-cloak x-show="showFilters" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="showFilters = false"></div>
+            <div x-cloak x-show="open" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="close()"></div>
 
             <div
                 x-cloak
-                x-show="showFilters"
+                x-show="open"
                 x-transition:enter="transform transition ease-out duration-300"
                 x-transition:enter-start="translate-x-full opacity-0"
                 x-transition:enter-end="translate-x-0 opacity-100"
@@ -74,7 +74,7 @@
                             <h3 class="text-lg font-semibold text-slate-900">Filtros de sistemas</h3>
                             <p class="mt-1 text-sm text-slate-500">Ajusta la búsqueda desde este panel lateral.</p>
                         </div>
-                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="showFilters = false">Cerrar</button>
+                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="close()">Cerrar</button>
                     </div>
                 </div>
 
@@ -275,7 +275,7 @@
                             <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'edit-system-record-{{ $system->id }}')">Cerrar</button>
                         </div>
 
-                        <form method="POST" action="{{ route('systems.update', $system) }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data='{"selectedStatusId":"","testingStatusIds":@json($testingStatusIds),"pendingErrors":@js((int) old("pending_errors", $system->pending_errors ?? 0)),"errorsInProgress":@js((int) old("errors_in_progress", $system->errors_in_progress ?? 0)),"inReview":@js((int) old("in_review", $system->in_review ?? 0)),"finalizedCount":@js((int) old("finalized", $system->finalized ?? 0)),init() { this.selectedStatusId = this.$refs.statusSelect.value; },isTestingStatus() { return this.testingStatusIds.includes(String(this.selectedStatusId)); },totalTrelloCards() { return (Number(this.pendingErrors) || 0) + (Number(this.errorsInProgress) || 0) + (Number(this.inReview) || 0) + (Number(this.finalizedCount) || 0); }}'>
+                        <form method="POST" action="{{ route('systems.update', $system) }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data="systemMetricsForm({ testingStatusIds: @js($testingStatusIds), pendingErrors: @js((int) old('pending_errors', $system->pending_errors ?? 0)), errorsInProgress: @js((int) old('errors_in_progress', $system->errors_in_progress ?? 0)), inReview: @js((int) old('in_review', $system->in_review ?? 0)), finalizedCount: @js((int) old('finalized', $system->finalized ?? 0)) })">
                             @csrf
                             @method('PATCH')
                             <div>
@@ -376,7 +376,7 @@
                     <button type="button" class="text-slate-400" x-data @click="$dispatch('close-modal', 'create-system-record')">Cerrar</button>
                 </div>
 
-                <form method="POST" action="{{ route('systems.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data='{"selectedStatusId":"","testingStatusIds":@json($testingStatusIds),"pendingErrors":@js((int) old("pending_errors", 0)),"errorsInProgress":@js((int) old("errors_in_progress", 0)),"inReview":@js((int) old("in_review", 0)),"finalizedCount":@js((int) old("finalized", 0)),init() { this.selectedStatusId = this.$refs.statusSelect.value; },isTestingStatus() { return this.testingStatusIds.includes(String(this.selectedStatusId)); },totalTrelloCards() { return (Number(this.pendingErrors) || 0) + (Number(this.errorsInProgress) || 0) + (Number(this.inReview) || 0) + (Number(this.finalizedCount) || 0); }}'>
+                <form method="POST" action="{{ route('systems.store') }}" enctype="multipart/form-data" class="mt-6 space-y-4" x-data="systemMetricsForm({ testingStatusIds: @js($testingStatusIds), pendingErrors: @js((int) old('pending_errors', 0)), errorsInProgress: @js((int) old('errors_in_progress', 0)), inReview: @js((int) old('in_review', 0)), finalizedCount: @js((int) old('finalized', 0)) })">
                     @csrf
                     <div>
                         <label for="system-request-date" class="app-label">Fecha de solicitud</label>

@@ -7,6 +7,7 @@
             <th>Descripción</th>
             <th>Fecha de creación</th>
             <th>Vencimiento</th>
+            <th>Avance</th>
             <th>Estado</th>
             <th>Prioridad</th>
             <th>Asignados</th>
@@ -21,13 +22,14 @@
                 <td>{{ $task->description ?: 'Sin descripción' }}</td>
                 <td>{{ $task->created_at->format('d/m/Y') }}</td>
                 <td>{{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha' }}</td>
+                <td>{{ $task->subtasks_progress_percentage }}%</td>
                 <td>{{ $task->status?->name ?? 'Sin estado' }}</td>
                 <td>{{ $task->priority?->name ?? 'Sin prioridad' }}</td>
                 <td>{{ $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : 'Sin asignados' }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="9">No hay datos para el reporte.</td>
+                <td colspan="10">No hay datos para el reporte.</td>
             </tr>
         @endforelse
     </tbody>

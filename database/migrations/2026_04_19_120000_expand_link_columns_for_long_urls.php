@@ -11,20 +11,12 @@ return new class extends Migration
         Schema::table('resource_links', function (Blueprint $table) {
             $table->text('url')->change();
         });
-
-        Schema::table('systems', function (Blueprint $table) {
-            $table->text('trello_url')->nullable()->change();
-        });
     }
 
     public function down(): void
     {
         Schema::table('resource_links', function (Blueprint $table) {
             $table->string('url')->change();
-        });
-
-        Schema::table('systems', function (Blueprint $table) {
-            $table->string('trello_url')->nullable()->change();
         });
     }
 };

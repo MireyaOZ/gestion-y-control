@@ -14,11 +14,7 @@
                 </div>
                 <h2 class="text-2xl font-semibold text-white">{{ $subtask->title }}</h2>
                 <p class="text-sm text-white/80">
-                    Tarea padre: {{ $subtask->task->title }}
-                    @if ($subtask->parentSubtask)
-                        · Subtarea superior: {{ $subtask->parentSubtask->title }}
-                    @endif
-                    · Tiempo desde asignación: {{ $subtask->assignment_elapsed ?: 'Sin asignar' }}
+                    Creada el {{ $subtask->created_at->format('d/m/Y') }} · Tiempo desde asignación: {{ $subtask->assignment_elapsed ?: 'Sin asignar' }}
                 </p>
             </div>
             <div class="flex gap-3">
@@ -79,14 +75,16 @@
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <h3 class="text-lg font-semibold text-white">Subtareas hijas</h3>
-                        <p class="mt-1 text-sm text-slate-400">Puedes anidar nuevas subtareas dentro de esta subtarea.</p>
+                        @can('createChild', $subtask)
+                            <p class="mt-1 text-sm text-slate-400">Puedes anidar nuevas subtareas dentro de esta subtarea.</p>
+                        @endcan
                     </div>
                     @can('createChild', $subtask)
                         <a href="{{ route('subtasks.create', ['task_id' => $subtask->task_id, 'parent_subtask_id' => $subtask->id]) }}" class="app-button-secondary">Agregar subtarea</a>
                     @endcan
                 </div>
 
-                <div x-data="{ expanded: false }" class="mt-4 overflow-x-auto pb-2">
+                <div x-data="expandableList()" class="mt-4 overflow-x-auto pb-2">
                     <div class="min-w-full space-y-3">
                         @forelse ($subtask->childSubtasksRecursive as $childSubtask)
                             <div x-show="expanded || {{ $loop->index }} < 5" x-transition.opacity.duration.150ms>
@@ -102,7 +100,7 @@
                             <button
                                 type="button"
                                 class="app-button-secondary"
-                                @click="expanded = !expanded"
+                                @click="toggle()"
                                 x-text="expanded ? 'Mostrar menos subtareas' : 'Ver más subtareas'"
                             ></button>
                         </div>

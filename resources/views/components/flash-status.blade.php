@@ -10,8 +10,7 @@
 
 @if ($flashStatus)
     <div
-        x-data="{ show: true }"
-        x-init="setTimeout(() => show = false, 4000)"
+        x-data="timedVisibility(4000)"
         x-show="show"
         x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0 -translate-y-2"

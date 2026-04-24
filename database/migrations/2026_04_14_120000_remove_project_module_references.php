@@ -9,11 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasColumn('tasks', 'project_id')) {
-            Schema::table('tasks', function (Blueprint $table): void {
-                $table->dropConstrainedForeignId('project_id');
-            });
-        }
+        Schema::table('tasks', function (Blueprint $table): void {
+            $table->dropConstrainedForeignId('project_id');
+        });
 
         DB::table('role_has_permissions')
             ->whereIn('permission_id', function ($query) {
@@ -30,10 +28,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (! Schema::hasColumn('tasks', 'project_id')) {
-            Schema::table('tasks', function (Blueprint $table): void {
-                $table->foreignId('project_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete()->after('priority_id');
-            });
-        }
+        Schema::table('tasks', function (Blueprint $table): void {
+            $table->foreignId('project_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete()->after('priority_id');
+        });
     }
 };

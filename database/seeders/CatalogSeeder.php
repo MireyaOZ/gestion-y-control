@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\EmailCargo;
 use App\Models\EmailMovementType;
 use App\Models\Priority;
-use App\Models\SystemRecord;
 use App\Models\SystemStatus;
 use App\Models\TaskStatus;
 use Illuminate\Database\Seeder;
@@ -64,17 +63,6 @@ class CatalogSeeder extends Seeder
                 ['slug' => $systemStatusSlug],
                 ['name' => $systemStatusName],
             );
-        }
-
-        $functionalTestingStatus = SystemStatus::query()->where('slug', 'en-pruebas')->first();
-        $duplicateTestingStatus = SystemStatus::query()->where('slug', 'en-pruebas-internas')->first();
-
-        if ($functionalTestingStatus && $duplicateTestingStatus) {
-            SystemRecord::query()
-                ->where('system_status_id', $duplicateTestingStatus->id)
-                ->update(['system_status_id' => $functionalTestingStatus->id]);
-
-            $duplicateTestingStatus->delete();
         }
 
         $emailCargoNames = [

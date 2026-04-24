@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="relative z-[100] border-b border-[#7b0014]/10 bg-[#960018] text-white shadow-sm">
+<nav x-data="navigationMenu()" class="relative z-[100] border-b border-[#7b0014]/10 bg-[#960018] text-white shadow-sm">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
@@ -71,7 +71,7 @@
             </div>
 
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center rounded-2xl p-2 text-white/80 hover:bg-white/10 hover:text-white focus:outline-none transition">
+                <button @click="toggle()" class="inline-flex items-center justify-center rounded-2xl p-2 text-white/80 hover:bg-white/10 hover:text-white focus:outline-none transition">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

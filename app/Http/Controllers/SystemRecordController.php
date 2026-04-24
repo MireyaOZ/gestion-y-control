@@ -509,10 +509,6 @@ class SystemRecordController extends Controller
 
     protected function wrapHistoryContent(?string $statusName, string $content): string
     {
-        if ($statusName === 'En pruebas') {
-            $statusName = 'En pruebas internas';
-        }
-
         return '<div data-status-group="'.e($statusName ?: 'Sin estatus').'">'.$content.'</div>';
     }
 }

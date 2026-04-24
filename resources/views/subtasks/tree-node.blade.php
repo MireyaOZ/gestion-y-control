@@ -6,7 +6,7 @@
     $hasChildren = $childCount > 0;
 @endphp
 
-<div x-data="{ open: false }" class="min-w-[56rem] space-y-3" @if($leftOffset > 0) style="margin-left: {{ $leftOffset }}px;" @endif>
+<div x-data="treeNodeToggle()" class="min-w-[56rem] space-y-3" @if($leftOffset > 0) style="margin-left: {{ $leftOffset }}px;" @endif>
     <div class="rounded-2xl border border-white/10 p-4 transition hover:bg-white/5">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
@@ -15,7 +15,7 @@
                         <button
                             type="button"
                             class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-[#960018]/20 hover:bg-[#960018]/5 hover:text-[#960018]"
-                            @click="open = !open"
+                            @click="toggle()"
                             :aria-expanded="open.toString()"
                         >
                             <svg class="h-4 w-4 transition-transform" :class="open ? 'rotate-90 text-[#960018]' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

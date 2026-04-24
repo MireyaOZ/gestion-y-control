@@ -13,8 +13,8 @@ $width = match ($width) {
 };
 @endphp
 
-<div class="relative z-[120]" x-data="{ open: false }" @click.outside="open = false" @close.stop="open = false">
-    <div @click="open = ! open">
+<div class="relative z-[120]" x-data="togglePanel()" @click.outside="close()" @close.stop="close()">
+    <div @click="toggle()">
         {{ $trigger }}
     </div>
 
@@ -27,7 +27,7 @@ $width = match ($width) {
             x-transition:leave-end="opacity-0 scale-95"
             class="absolute top-full z-[130] mt-2 {{ $width }} rounded-2xl shadow-xl shadow-[#960018]/10 {{ $alignmentClasses }}"
             style="display: none;"
-            @click="open = false">
+            @click="close()">
         <div class="overflow-hidden rounded-2xl {{ $contentClasses }}">
             {{ $content }}
         </div>

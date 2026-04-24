@@ -7,7 +7,12 @@
             </div>
             <div class="flex gap-3">
                 @if ($task->rootSubtasks->isNotEmpty())
-                    <a href="{{ route('tasks.hierarchy.report', $task) }}" class="app-button-secondary">Reporte PDF</a>
+                    <button
+                        type="button"
+                        class="app-button-secondary border-[#960018]/30 text-[#960018] hover:border-[#960018] hover:bg-[#fff1f3] hover:text-[#7c0014] focus:outline-none focus:ring-2 focus:ring-white/60"
+                        x-data
+                        @click="$dispatch('open-modal', 'task-report-options-{{ $task->id }}')"
+                    >Generar reporte</button>
                 @endif
                 @can('update', $task)
                     <a href="{{ route('tasks.edit', $task) }}" class="app-button-secondary border-amber-200 text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">Editar</a>
@@ -81,7 +86,7 @@
                         <a href="{{ route('subtasks.create', ['task_id' => $task->id]) }}" class="app-button-secondary">Nueva subtarea</a>
                     @endcan
                 </div>
-                <div x-data="{ expanded: false }" class="mt-4 overflow-x-auto pb-2">
+                <div x-data="expandableList()" class="mt-4 overflow-x-auto pb-2">
                     <div class="min-w-full space-y-3">
                         @forelse ($task->rootSubtasks as $subtask)
                             <div x-show="expanded || {{ $loop->index }} < 5" x-transition.opacity.duration.150ms>
@@ -97,7 +102,7 @@
                             <button
                                 type="button"
                                 class="app-button-secondary"
-                                @click="expanded = !expanded"
+                                @click="toggle()"
                                 x-text="expanded ? 'Mostrar menos subtareas' : 'Ver más subtareas'"
                             ></button>
                         </div>
@@ -118,5 +123,56 @@
         @canany(['viewComments', 'comment'], $task)
             @include('shared.comments-section', ['model' => $task, 'type' => 'task'])
         @endcanany
+
+        @if ($task->rootSubtasks->isNotEmpty())
+            <x-modal name="task-report-options-{{ $task->id }}" :show="false" maxWidth="lg">
+                <div x-data="reportOptions()" class="p-6 sm:p-8">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-slate-900">Generar reporte</h3>
+                            <p class="mt-1 text-sm text-slate-500">Selecciona el formato y el tipo de vista para exportar la tarea con sus subtareas.</p>
+                        </div>
+                        <button type="button" class="text-slate-400 transition hover:text-slate-700" x-data @click="$dispatch('close-modal', 'task-report-options-{{ $task->id }}')">Cerrar</button>
+                    </div>
+
+                    <form method="GET" :action="'{{ route('tasks.hierarchy.report', $task) }}'" class="mt-6 space-y-6">
+                        <div class="grid gap-6 sm:grid-cols-2">
+                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <label class="app-label">Formato</label>
+                                <div class="mt-3 grid gap-3">
+                                    <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="format" value="pdf" x-model="format" class="text-[#960018] focus:ring-[#960018]">
+                                        <span>PDF</span>
+                                    </label>
+                                    <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="format" value="excel" x-model="format" class="text-[#960018] focus:ring-[#960018]">
+                                        <span>Excel</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <label class="app-label">Vista</label>
+                                <div class="mt-3 grid gap-3">
+                                    <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="view" value="list" x-model="view" class="text-[#960018] focus:ring-[#960018]">
+                                        <span>Lista</span>
+                                    </label>
+                                    <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="view" value="table" x-model="view" class="text-[#960018] focus:ring-[#960018]">
+                                        <span>Tabla</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
+                            <button type="button" class="app-button-secondary" x-data @click="$dispatch('close-modal', 'task-report-options-{{ $task->id }}')">Cancelar</button>
+                            <button type="submit" class="app-button" style="color: #ffffff !important;">Generar reporte</button>
+                        </div>
+                    </form>
+                </div>
+            </x-modal>
+        @endif
     </div>
 </x-app-layout>

@@ -12,7 +12,7 @@
     </x-slot>
 
     <div class="space-y-6">
-        <form method="GET" class="app-card relative p-4" x-data="{ showFilters: false }" @keydown.escape.window="showFilters = false">
+        <form method="GET" class="app-card relative p-4" x-data="filterDrawer()" @keydown.escape.window="close()">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <div class="flex-1">
                     <input
@@ -25,7 +25,7 @@
                 </div>
 
                 <div class="flex gap-3">
-                    <button type="button" class="app-button-secondary" @click="showFilters = true" :aria-expanded="showFilters.toString()">
+                    <button type="button" class="app-button-secondary" @click="show()" :aria-expanded="open.toString()">
                         <svg class="mr-2 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M2.5 4.75A1.25 1.25 0 0 1 3.75 3.5h12.5a1.25 1.25 0 0 1 .97 2.04L12 11.95v3.55a1.25 1.25 0 0 1-.61 1.07l-2 1.2A1.25 1.25 0 0 1 7.5 16.7v-4.75L2.78 5.54a1.25 1.25 0 0 1-.28-.79Z" clip-rule="evenodd" />
                         </svg>
@@ -35,11 +35,11 @@
                 </div>
             </div>
 
-            <div x-cloak x-show="showFilters" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="showFilters = false"></div>
+            <div x-cloak x-show="open" x-transition.opacity class="fixed inset-0 z-[140] bg-slate-950/30 backdrop-blur-sm" @click="close()"></div>
 
             <div
                 x-cloak
-                x-show="showFilters"
+                x-show="open"
                 x-transition:enter="transform transition ease-out duration-300"
                 x-transition:enter-start="translate-x-full opacity-0"
                 x-transition:enter-end="translate-x-0 opacity-100"
@@ -54,7 +54,7 @@
                             <h3 class="text-lg font-semibold text-slate-900">Filtros de tareas</h3>
                             <p class="mt-1 text-sm text-slate-500">Ajusta la búsqueda desde este panel lateral.</p>
                         </div>
-                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="showFilters = false">
+                        <button type="button" class="rounded-2xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" @click="close()">
                             Cerrar
                         </button>
                     </div>
@@ -246,6 +246,18 @@
                             </div>
                             <p class="mt-1 text-sm text-slate-400">Creada: {{ $task->created_at->format('d/m/Y') }}</p>
                             <p class="mt-1 text-sm text-slate-400">Vencimiento: {{ optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha de vencimiento' }}</p>
+                            @if ($task->total_subtasks_progress_count > 0)
+                                <div class="mt-3 max-w-sm">
+                                    <div class="flex items-center justify-between gap-3 text-xs text-slate-400">
+                                        <span>Avance de subtareas</span>
+                                        <span class="font-semibold text-white">{{ $task->subtasks_progress_percentage }}%</span>
+                                    </div>
+                                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/70">
+                                        <div class="h-full rounded-full bg-emerald-500" style="width: {{ $task->subtasks_progress_percentage }}%"></div>
+                                    </div>
+                                    <p class="mt-2 text-xs text-slate-400">{{ $task->completed_subtasks_count }} de {{ $task->total_subtasks_progress_count }} subtareas completadas</p>
+                                </div>
+                            @endif
                             @if ($task->is_overdue)
                                 <p class="mt-1 text-sm font-semibold text-rose-300">Vencida hace {{ $task->overdue_days }} {{ \Illuminate\Support\Str::plural('día', $task->overdue_days) }}</p>
                             @elseif ($task->due_date?->isToday())

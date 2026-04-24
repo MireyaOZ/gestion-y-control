@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        foreach (['email_requests', 'systems', 'tasks', 'subtasks', 'attachments', 'resource_links', 'comments', 'change_logs'] as $tableName) {
+        foreach (['tasks', 'attachments', 'resource_links', 'comments', 'change_logs'] as $tableName) {
             Schema::table($tableName, function (Blueprint $table): void {
                 $table->softDeletes();
             });
@@ -17,7 +17,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        foreach (['email_requests', 'systems', 'tasks', 'subtasks', 'attachments', 'resource_links', 'comments', 'change_logs'] as $tableName) {
+        foreach (['tasks', 'attachments', 'resource_links', 'comments', 'change_logs'] as $tableName) {
             Schema::table($tableName, function (Blueprint $table): void {
                 $table->dropSoftDeletes();
             });

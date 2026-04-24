@@ -40,7 +40,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/search/users', [SearchController::class, 'users'])->name('search.users');
 
-    Route::get('tasks/{task}/hierarchy-report/pdf', [TaskController::class, 'hierarchyReport'])->name('tasks.hierarchy.report');
+    Route::get('tasks/{task}/hierarchy-report', [TaskController::class, 'hierarchyReport'])->name('tasks.hierarchy.report');
     Route::resource('tasks', TaskController::class);
     Route::get('tasks/reporte/{format}', [TaskController::class, 'report'])->name('tasks.report');
     Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status');

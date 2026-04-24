@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class Task extends Model
 {
@@ -134,6 +135,53 @@ class Task extends Model
         }
 
         return (int) $this->due_date->diffInDays(today());
+    }
+
+    public function getCompletedSubtasksCountAttribute(): int
+    {
+        return $this->collectAllSubtasks()
+            ->filter(fn (Subtask $subtask) => $subtask->status?->slug === 'completada')
+            ->count();
+    }
+
+    public function getTotalSubtasksProgressCountAttribute(): int
+    {
+        return $this->collectAllSubtasks()->count();
+    }
+
+    public function getSubtasksProgressPercentageAttribute(): int
+    {
+        $totalSubtasks = $this->total_subtasks_progress_count;
+
+        if ($totalSubtasks === 0) {
+            return 0;
+        }
+
+        return (int) round(($this->completed_subtasks_count / $totalSubtasks) * 100);
+    }
+
+    protected function collectAllSubtasks(): Collection
+    {
+        $subtasks = collect();
+
+        foreach ($this->rootSubtasks as $subtask) {
+            $subtasks->push($subtask);
+            $subtasks = $subtasks->merge($this->collectNestedSubtasks($subtask));
+        }
+
+        return $subtasks;
+    }
+
+    protected function collectNestedSubtasks(Subtask $subtask): Collection
+    {
+        $subtasks = collect();
+
+        foreach ($subtask->childSubtasksRecursive as $childSubtask) {
+            $subtasks->push($childSubtask);
+            $subtasks = $subtasks->merge($this->collectNestedSubtasks($childSubtask));
+        }
+
+        return $subtasks;
     }
 
     protected function normalizeUppercaseText(?string $value): ?string

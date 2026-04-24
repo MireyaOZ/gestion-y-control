@@ -25,7 +25,7 @@
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 
-            <div x-data="{ showPassword: false }">
+            <div x-data="passwordField()">
                 <label for="password" class="app-label">Ingresa contraseña</label>
                 <div class="relative">
                     <input
@@ -39,7 +39,7 @@
                     <button
                         type="button"
                         class="absolute inset-y-0 right-0 inline-flex items-center justify-center px-4 text-slate-400 transition hover:text-[#960018] focus:outline-none"
-                        @click="showPassword = !showPassword"
+                        @click="toggle()"
                         :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                     >
                         <svg x-show="!showPassword" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">

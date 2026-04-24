@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Collection;
 
 class TaskController extends Controller
 {
@@ -35,7 +36,7 @@ class TaskController extends Controller
             : null;
 
         $tasks = $this->buildFilteredTasksQuery($request)
-            ->with(['status', 'priority', 'creator', 'assignees'])
+            ->with(['status', 'priority', 'creator', 'assignees', 'rootSubtasks.status', 'rootSubtasks.childSubtasksRecursive'])
             ->withCount('subtasks')
             ->latest()
             ->paginate(10)
@@ -105,7 +106,7 @@ class TaskController extends Controller
             : null;
 
         $tasks = $this->buildFilteredTasksQuery($request)
-            ->with(['status', 'priority', 'creator', 'assignees'])
+            ->with(['status', 'priority', 'creator', 'assignees', 'rootSubtasks.status', 'rootSubtasks.childSubtasksRecursive'])
             ->latest()
             ->get();
 
@@ -155,26 +156,57 @@ class TaskController extends Controller
         ]);
     }
 
-    public function hierarchyReport(Task $task): Response
+    public function hierarchyReport(Request $request, Task $task): Response
     {
         $this->authorize('view', $task);
 
+        $format = $request->string('format', 'pdf')->toString();
+        $reportView = $request->string('view', 'list')->toString();
+
+        abort_unless(in_array($format, ['pdf', 'excel'], true), 404);
+        abort_unless(in_array($reportView, ['table', 'list'], true), 404);
+
         $task->load([
+            'status',
             'creator',
+            'assignees',
+            'rootSubtasks.status',
+            'rootSubtasks.assignees',
             'rootSubtasks.childSubtasksRecursive',
         ]);
 
         $generatedAt = now();
-        $reportTitle = 'Reporte jerárquico de tarea';
-        $filename = 'tarea-jerarquia-'.$task->id.'-'.$generatedAt->format('Ymd-His').'.pdf';
+        $reportTitle = 'Reporte de tareas';
+        $filenameBase = 'tarea-'.$task->id.'-'.$reportView.'-'.$generatedAt->format('Ymd-His');
+        $hierarchyRows = ($reportView === 'table' || $format === 'excel')
+            ? $this->flattenHierarchyRows($task)
+            : collect();
 
-        $pdf = Pdf::loadView('tasks.hierarchy-report-pdf', compact(
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('tasks.hierarchy-report-pdf', compact(
+                'task',
+                'generatedAt',
+                'reportTitle',
+                'reportView',
+                'hierarchyRows',
+            ))->setPaper('a4', $reportView === 'table' ? 'landscape' : 'portrait');
+
+            return $pdf->download($filenameBase.'.pdf');
+        }
+
+        $content = view('tasks.hierarchy-report-excel', compact(
             'task',
             'generatedAt',
             'reportTitle',
-        ))->setPaper('a4', 'portrait');
+            'reportView',
+            'hierarchyRows',
+        ))->render();
 
-        return $pdf->download($filename);
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -431,6 +463,43 @@ class TaskController extends Controller
     protected function formatAssigneeList(array $assignees): string
     {
         return $assignees === [] ? 'Sin asignados' : implode(', ', $assignees);
+    }
+
+    protected function flattenHierarchyRows(Task $task): Collection
+    {
+        $rows = collect();
+
+        foreach ($task->rootSubtasks as $subtask) {
+            $rows->push($this->mapHierarchyRow($subtask, 0));
+            $rows = $rows->merge($this->flattenChildHierarchyRows($subtask, 1));
+        }
+
+        return $rows;
+    }
+
+    protected function flattenChildHierarchyRows($subtask, int $level): Collection
+    {
+        $rows = collect();
+
+        foreach ($subtask->childSubtasksRecursive as $childSubtask) {
+            $rows->push($this->mapHierarchyRow($childSubtask, $level));
+            $rows = $rows->merge($this->flattenChildHierarchyRows($childSubtask, $level + 1));
+        }
+
+        return $rows;
+    }
+
+    protected function mapHierarchyRow($subtask, int $level): array
+    {
+        return [
+            'level' => $level,
+            'title' => $subtask->title,
+            'created_at' => $subtask->created_at?->format('d/m/Y') ?? 'Sin fecha',
+            'status' => $subtask->status?->name ?? 'Sin estado',
+            'due_date' => optional($subtask->due_date)->format('d/m/Y') ?: 'Sin fecha',
+            'assignees' => $subtask->assignees->isNotEmpty() ? $subtask->assignees->pluck('name')->join(', ') : 'Sin asignados',
+            'progress' => $subtask->status?->slug === 'completada' ? '100%' : '0%',
+        ];
     }
 
     protected function formData(array $extra = []): array

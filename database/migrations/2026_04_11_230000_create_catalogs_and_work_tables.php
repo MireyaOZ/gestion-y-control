@@ -60,10 +60,12 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('due_date')->nullable();
             $table->foreignId('task_id')->constrained()->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('parent_subtask_id')->nullable()->constrained('subtasks')->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('task_status_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('priority_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('created_by')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('task_user', function (Blueprint $table) {
