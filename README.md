@@ -1,6 +1,6 @@
 # Plataforma de Gestion y Seguimiento
 
-Este proyecto puede ejecutarse localmente con Laragon sin depender de Docker.
+Este proyecto esta configurado para ejecutarse localmente con Laragon.
 
 ## Configuracion local esperada
 
@@ -49,10 +49,6 @@ npm run dev
 
 Con Laragon, la aplicacion debe responder en `http://gestion-y-control.test`.
 
-## Docker
-
-Los archivos de Docker se mantienen en el repositorio, pero quedaron aislados del flujo normal con Laragon.
-
 Si usas `make`, los comandos por defecto ahora son locales:
 
 ```bash
@@ -61,13 +57,4 @@ make migrate
 make seed
 make test
 make dev
-```
-
-Los comandos de Docker siguen existiendo, pero con prefijo explicito:
-
-```bash
-make docker-up
-make docker-down
-make docker-migrate
-make docker-test
 ```

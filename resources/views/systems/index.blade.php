@@ -351,7 +351,8 @@
 
                             <div>
                                 <label for="edit-system-new-attachments-{{ $system->id }}" class="app-label">Adjuntar archivos</label>
-                                <input id="edit-system-new-attachments-{{ $system->id }}" name="attachments[]" type="file" class="block w-full text-sm text-slate-600" multiple>
+                                <input id="edit-system-new-attachments-{{ $system->id }}" name="attachments[]" type="file" class="app-file-input" multiple>
+                                <p class="app-file-help">Puedes seleccionar uno o varios archivos para agregarlos al sistema.</p>
                             </div>
 
                             <div class="flex justify-end gap-3">
@@ -455,7 +456,8 @@
 
                     <div>
                         <label for="system-attachments" class="app-label">Adjuntar archivos</label>
-                        <input id="system-attachments" name="attachments[]" type="file" class="block w-full text-sm text-slate-600" multiple>
+                        <input id="system-attachments" name="attachments[]" type="file" class="app-file-input" multiple>
+                        <p class="app-file-help">Puedes seleccionar uno o varios archivos para agregarlos al sistema.</p>
                     </div>
 
                     <div class="flex justify-end gap-3">

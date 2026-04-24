@@ -84,7 +84,11 @@
             </div>
             <form method="POST" action="{{ route('attachments.store', [$type, $model->id]) }}" enctype="multipart/form-data" class="mt-6 space-y-4">
                 @csrf
-                <input type="file" name="file" class="block w-full text-sm text-slate-300">
+                <div>
+                    <label for="attachment-file-{{ $type }}-{{ $model->id }}" class="app-label">Archivo</label>
+                    <input id="attachment-file-{{ $type }}-{{ $model->id }}" type="file" name="file" class="app-file-input">
+                    <p class="app-file-help">Elige un archivo para adjuntarlo al elemento actual.</p>
+                </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" class="app-button-secondary" x-data @click="$dispatch('close-modal', 'attachment-{{ $type }}-{{ $model->id }}')">Cancelar</button>
                     <button class="app-button" type="submit">Adjuntar</button>

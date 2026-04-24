@@ -226,6 +226,30 @@ Alpine.data('reportOptions', ({ format = 'pdf', view = 'list' } = {}) => ({
     view,
 }));
 
+Alpine.data('taskReportOptions', ({
+    format = 'pdf',
+    view = 'list',
+    scope = 'full_task',
+    dueFilter = 'all',
+} = {}) => ({
+    format,
+    view,
+    scope,
+    dueFilter,
+    requiresSubtask() {
+        return this.scope === 'specific_subtask';
+    },
+    usesSubtaskFilters() {
+        return this.scope === 'filtered_subtasks';
+    },
+    usesDueDate() {
+        return this.dueFilter === 'exact_date';
+    },
+    usesDueRange() {
+        return this.dueFilter === 'range';
+    },
+}));
+
 Alpine.data('timedVisibility', (duration = 2000) => ({
     show: true,
     duration,

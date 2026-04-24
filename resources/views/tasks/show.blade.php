@@ -6,14 +6,12 @@
                 <p class="text-sm text-white/80">Creada el {{ $task->created_at->format('d/m/Y') }} · Tiempo desde asignación: {{ $task->assignment_elapsed ?: 'Sin asignar' }}</p>
             </div>
             <div class="flex gap-3">
-                @if ($task->rootSubtasks->isNotEmpty())
-                    <button
-                        type="button"
-                        class="app-button-secondary border-[#960018]/30 text-[#960018] hover:border-[#960018] hover:bg-[#fff1f3] hover:text-[#7c0014] focus:outline-none focus:ring-2 focus:ring-white/60"
-                        x-data
-                        @click="$dispatch('open-modal', 'task-report-options-{{ $task->id }}')"
-                    >Generar reporte</button>
-                @endif
+                <button
+                    type="button"
+                    class="app-button-secondary border-[#960018]/30 text-[#960018] hover:border-[#960018] hover:bg-[#fff1f3] hover:text-[#7c0014] focus:outline-none focus:ring-2 focus:ring-white/60"
+                    x-data
+                    @click="$dispatch('open-modal', 'task-report-options-{{ $task->id }}')"
+                >Generar reporte</button>
                 @can('update', $task)
                     <a href="{{ route('tasks.edit', $task) }}" class="app-button-secondary border-amber-200 text-amber-600 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">Editar</a>
                 @endcan
@@ -124,19 +122,45 @@
             @include('shared.comments-section', ['model' => $task, 'type' => 'task'])
         @endcanany
 
-        @if ($task->rootSubtasks->isNotEmpty())
-            <x-modal name="task-report-options-{{ $task->id }}" :show="false" maxWidth="lg">
-                <div x-data="reportOptions()" class="p-6 sm:p-8">
+        <x-modal name="task-report-options-{{ $task->id }}" :show="false" maxWidth="2xl">
+            <div x-data="taskReportOptions()" class="p-6 sm:p-8">
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h3 class="text-xl font-semibold text-slate-900">Generar reporte</h3>
-                            <p class="mt-1 text-sm text-slate-500">Selecciona el formato y el tipo de vista para exportar la tarea con sus subtareas.</p>
+                            <p class="mt-1 text-sm text-slate-500">Elige si quieres exportar la tarea completa, una subtarea concreta o subtareas filtradas por usuario, estado y fechas.</p>
                         </div>
                         <button type="button" class="text-slate-400 transition hover:text-slate-700" x-data @click="$dispatch('close-modal', 'task-report-options-{{ $task->id }}')">Cerrar</button>
                     </div>
 
                     <form method="GET" :action="'{{ route('tasks.hierarchy.report', $task) }}'" class="mt-6 space-y-6">
-                        <div class="grid gap-6 sm:grid-cols-2">
+                        <div class="grid gap-6 xl:grid-cols-3">
+                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">
+                                <label class="app-label">Alcance</label>
+                                <div class="mt-3 grid gap-3 lg:grid-cols-3">
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="scope" value="full_task" x-model="scope" class="mt-0.5 text-[#960018] focus:ring-[#960018]">
+                                        <span>
+                                            <span class="block font-semibold text-slate-900">Tarea completa</span>
+                                            <span class="mt-1 block text-xs text-slate-500">Incluye la tarea, sus subtareas y todas las subtareas hijas.</span>
+                                        </span>
+                                    </label>
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="scope" value="specific_subtask" x-model="scope" class="mt-0.5 text-[#960018] focus:ring-[#960018]">
+                                        <span>
+                                            <span class="block font-semibold text-slate-900">Subtarea específica</span>
+                                            <span class="mt-1 block text-xs text-slate-500">Genera una subtarea puntual junto con su rama hija.</span>
+                                        </span>
+                                    </label>
+                                    <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-700 transition hover:border-[#960018]/30 hover:bg-[#960018]/5">
+                                        <input type="radio" name="scope" value="filtered_subtasks" x-model="scope" class="mt-0.5 text-[#960018] focus:ring-[#960018]">
+                                        <span>
+                                            <span class="block font-semibold text-slate-900">Subtareas filtradas</span>
+                                            <span class="mt-1 block text-xs text-slate-500">Permite filtrar por Pepito, completadas, incompletas, vencidas, hoy, mañana o rangos.</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                                 <label class="app-label">Formato</label>
                                 <div class="mt-3 grid gap-3">
@@ -164,6 +188,78 @@
                                     </label>
                                 </div>
                             </div>
+
+                            <div x-show="requiresSubtask()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">
+                                <label for="task-report-subtask-id-{{ $task->id }}" class="app-label">Subtarea específica</label>
+                                <select id="task-report-subtask-id-{{ $task->id }}" name="subtask_id" class="app-input" :disabled="!requiresSubtask()" :required="requiresSubtask()">
+                                    <option value="">Selecciona una subtarea</option>
+                                    @foreach ($reportSubtaskOptions as $option)
+                                        <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div x-show="usesSubtaskFilters()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <label for="task-report-assignee-id-{{ $task->id }}" class="app-label">Usuario asignado</label>
+                                <select id="task-report-assignee-id-{{ $task->id }}" name="assignee_id" class="app-input" :disabled="!usesSubtaskFilters()">
+                                    <option value="">Todos los usuarios</option>
+                                    @foreach ($reportAssigneeOptions as $assigneeOption)
+                                        <option value="{{ $assigneeOption->id }}">{{ $assigneeOption->name }} · {{ $assigneeOption->email }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div x-show="usesSubtaskFilters()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <label for="task-report-completion-{{ $task->id }}" class="app-label">Estado de entrega</label>
+                                <select id="task-report-completion-{{ $task->id }}" name="completion" class="app-input" :disabled="!usesSubtaskFilters()">
+                                    <option value="all">Todas</option>
+                                    <option value="completed">Completadas</option>
+                                    <option value="incomplete">Incompletas</option>
+                                </select>
+                            </div>
+
+                            <div x-show="usesSubtaskFilters()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <label for="task-report-due-filter-{{ $task->id }}" class="app-label">Filtro de vencimiento</label>
+                                <select id="task-report-due-filter-{{ $task->id }}" name="due_filter" class="app-input" x-model="dueFilter" :disabled="!usesSubtaskFilters()">
+                                    <option value="all">Cualquier fecha</option>
+                                    <option value="overdue">Vencidas</option>
+                                    <option value="today">Vencen hoy</option>
+                                    <option value="tomorrow">Vencen mañana</option>
+                                    <option value="exact_date">Fecha exacta</option>
+                                    <option value="range">Rango de fechas</option>
+                                </select>
+                            </div>
+
+                            <div x-show="usesSubtaskFilters()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label for="task-report-created-from-{{ $task->id }}" class="app-label">Creada desde</label>
+                                        <input id="task-report-created-from-{{ $task->id }}" name="created_from" type="date" class="app-input" :disabled="!usesSubtaskFilters()">
+                                    </div>
+                                    <div>
+                                        <label for="task-report-created-to-{{ $task->id }}" class="app-label">Creada hasta</label>
+                                        <input id="task-report-created-to-{{ $task->id }}" name="created_to" type="date" class="app-input" :disabled="!usesSubtaskFilters()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="usesSubtaskFilters() && usesDueDate()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">
+                                <label for="task-report-due-date-{{ $task->id }}" class="app-label">Fecha exacta de vencimiento</label>
+                                <input id="task-report-due-date-{{ $task->id }}" name="due_date" type="date" class="app-input" :disabled="!usesSubtaskFilters() || !usesDueDate()">
+                            </div>
+
+                            <div x-show="usesSubtaskFilters() && usesDueRange()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    <div>
+                                        <label for="task-report-due-from-{{ $task->id }}" class="app-label">Vence desde</label>
+                                        <input id="task-report-due-from-{{ $task->id }}" name="due_from" type="date" class="app-input" :disabled="!usesSubtaskFilters() || !usesDueRange()">
+                                    </div>
+                                    <div>
+                                        <label for="task-report-due-to-{{ $task->id }}" class="app-label">Vence hasta</label>
+                                        <input id="task-report-due-to-{{ $task->id }}" name="due_to" type="date" class="app-input" :disabled="!usesSubtaskFilters() || !usesDueRange()">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
@@ -173,6 +269,5 @@
                     </form>
                 </div>
             </x-modal>
-        @endif
     </div>
 </x-app-layout>

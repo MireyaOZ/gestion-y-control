@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Priority;
+use App\Models\Subtask;
 use App\Models\Task;
 use App\Models\TaskStatus;
 use App\Models\User;
@@ -162,9 +163,21 @@ class TaskController extends Controller
 
         $format = $request->string('format', 'pdf')->toString();
         $reportView = $request->string('view', 'list')->toString();
+        $reportScope = $request->string('scope', 'full_task')->toString();
 
         abort_unless(in_array($format, ['pdf', 'excel'], true), 404);
         abort_unless(in_array($reportView, ['table', 'list'], true), 404);
+        abort_unless(in_array($reportScope, ['full_task', 'specific_subtask', 'filtered_subtasks'], true), 404);
+
+        return match ($reportScope) {
+            'full_task' => $this->downloadFullTaskHierarchyReport($task, $format, $reportView),
+            'specific_subtask' => $this->downloadSpecificSubtaskHierarchyReport($request, $task, $format, $reportView),
+            'filtered_subtasks' => $this->downloadFilteredSubtasksReport($request, $task, $format, $reportView),
+        };
+    }
+
+    protected function downloadFullTaskHierarchyReport(Task $task, string $format, string $reportView): Response
+    {
 
         $task->load([
             'status',
@@ -200,6 +213,127 @@ class TaskController extends Controller
             'reportTitle',
             'reportView',
             'hierarchyRows',
+        ))->render();
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    protected function downloadSpecificSubtaskHierarchyReport(Request $request, Task $task, string $format, string $reportView): Response
+    {
+        $selectedSubtaskId = $request->integer('subtask_id');
+
+        abort_if($selectedSubtaskId <= 0, 422, 'Selecciona una subtarea para generar el reporte.');
+
+        $subtask = Subtask::query()
+            ->where('task_id', $task->id)
+            ->with([
+                'task',
+                'status',
+                'priority',
+                'creator',
+                'assignees',
+                'parentSubtask',
+                'childSubtasksRecursive',
+            ])
+            ->findOrFail($selectedSubtaskId);
+
+        $generatedAt = now();
+        $reportTitle = 'Reporte de subtarea';
+        $filenameBase = 'subtarea-'.$subtask->id.'-'.$reportView.'-'.$generatedAt->format('Ymd-His');
+        $hierarchyRows = ($reportView === 'table' || $format === 'excel')
+            ? $this->flattenSingleSubtaskHierarchyRows($subtask)
+            : collect();
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('tasks.subtask-hierarchy-report-pdf', compact(
+                'task',
+                'subtask',
+                'generatedAt',
+                'reportTitle',
+                'reportView',
+                'hierarchyRows',
+            ))->setPaper('a4', $reportView === 'table' ? 'landscape' : 'portrait');
+
+            return $pdf->download($filenameBase.'.pdf');
+        }
+
+        $content = view('tasks.subtask-hierarchy-report-excel', compact(
+            'task',
+            'subtask',
+            'generatedAt',
+            'reportTitle',
+            'reportView',
+            'hierarchyRows',
+        ))->render();
+
+        return response($content, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    protected function downloadFilteredSubtasksReport(Request $request, Task $task, string $format, string $reportView): Response
+    {
+        $selectedAssigneeId = $request->integer('assignee_id');
+        $selectedAssignee = $selectedAssigneeId > 0
+            ? User::query()->find($selectedAssigneeId)
+            : null;
+
+        $subtasks = $this->buildTaskScopedSubtaskReportQuery($task, $request)
+            ->with(['task', 'status', 'priority', 'creator', 'assignees', 'parentSubtask'])
+            ->latest()
+            ->get();
+
+        $generatedAt = now();
+        $reportTitle = 'Reporte de subtareas';
+        $filenameBase = 'subtareas-tarea-'.$task->id.'-'.$reportView.'-'.$generatedAt->format('Ymd-His');
+        $selectedCompletion = $request->string('completion', 'all')->toString();
+        $selectedDueFilter = $request->string('due_filter', 'all')->toString();
+        $selectedCreatedFrom = $request->string('created_from')->toString();
+        $selectedCreatedTo = $request->string('created_to')->toString();
+        $selectedDueDate = $request->string('due_date')->toString();
+        $selectedDueFrom = $request->string('due_from')->toString();
+        $selectedDueTo = $request->string('due_to')->toString();
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('tasks.subtask-report-pdf', compact(
+                'task',
+                'subtasks',
+                'generatedAt',
+                'reportTitle',
+                'reportView',
+                'selectedAssignee',
+                'selectedCompletion',
+                'selectedDueFilter',
+                'selectedCreatedFrom',
+                'selectedCreatedTo',
+                'selectedDueDate',
+                'selectedDueFrom',
+                'selectedDueTo',
+            ))->setPaper('a4', $reportView === 'table' ? 'landscape' : 'portrait');
+
+            return $pdf->download($filenameBase.'.pdf');
+        }
+
+        $content = view('tasks.subtask-report-excel', compact(
+            'task',
+            'subtasks',
+            'generatedAt',
+            'reportTitle',
+            'reportView',
+            'selectedAssignee',
+            'selectedCompletion',
+            'selectedDueFilter',
+            'selectedCreatedFrom',
+            'selectedCreatedTo',
+            'selectedDueDate',
+            'selectedDueFrom',
+            'selectedDueTo',
         ))->render();
 
         return response($content, 200, [
@@ -245,7 +379,10 @@ class TaskController extends Controller
             'changeLogs.author',
         ]);
 
-        return view('tasks.show', compact('task'));
+        $reportSubtaskOptions = $this->flattenTaskSubtaskOptions($task);
+        $reportAssigneeOptions = $this->taskReportAssigneeOptions($task);
+
+        return view('tasks.show', compact('task', 'reportSubtaskOptions', 'reportAssigneeOptions'));
     }
 
     public function edit(Task $task): View
@@ -477,6 +614,12 @@ class TaskController extends Controller
         return $rows;
     }
 
+    protected function flattenSingleSubtaskHierarchyRows(Subtask $subtask): Collection
+    {
+        return collect([$this->mapHierarchyRow($subtask, 0)])
+            ->merge($this->flattenChildHierarchyRows($subtask, 1));
+    }
+
     protected function flattenChildHierarchyRows($subtask, int $level): Collection
     {
         $rows = collect();
@@ -492,14 +635,120 @@ class TaskController extends Controller
     protected function mapHierarchyRow($subtask, int $level): array
     {
         return [
+            'id' => $subtask->id,
             'level' => $level,
             'title' => $subtask->title,
+            'task' => $subtask->task?->title ?? 'Sin tarea',
+            'parent' => $subtask->parentSubtask?->title ?? 'Raíz',
+            'creator' => $subtask->creator?->name ?? 'Sin creador',
             'created_at' => $subtask->created_at?->format('d/m/Y') ?? 'Sin fecha',
             'status' => $subtask->status?->name ?? 'Sin estado',
             'due_date' => optional($subtask->due_date)->format('d/m/Y') ?: 'Sin fecha',
             'assignees' => $subtask->assignees->isNotEmpty() ? $subtask->assignees->pluck('name')->join(', ') : 'Sin asignados',
             'progress' => $subtask->status?->slug === 'completada' ? '100%' : '0%',
         ];
+    }
+
+    protected function buildTaskScopedSubtaskReportQuery(Task $task, Request $request): Builder
+    {
+        $selectedSubtaskId = $request->integer('subtask_id');
+        $selectedAssigneeId = $request->integer('assignee_id');
+        $selectedCompletion = $request->string('completion', 'all')->toString();
+        $selectedDueFilter = $request->string('due_filter', 'all')->toString();
+        $selectedCreatedFrom = $request->string('created_from')->toString();
+        $selectedCreatedTo = $request->string('created_to')->toString();
+        $selectedDueDate = $request->string('due_date')->toString();
+        $selectedDueFrom = $request->string('due_from')->toString();
+        $selectedDueTo = $request->string('due_to')->toString();
+
+        $query = Subtask::query()
+            ->where('task_id', $task->id)
+            ->when($selectedSubtaskId > 0, function (Builder $subtaskQuery) use ($selectedSubtaskId) {
+                $selectedSubtask = Subtask::query()
+                    ->with('childSubtasksRecursive')
+                    ->find($selectedSubtaskId);
+
+                if (! $selectedSubtask) {
+                    return $subtaskQuery->whereRaw('1 = 0');
+                }
+
+                return $subtaskQuery->whereIn('id', $this->collectSubtaskBranchIds($selectedSubtask));
+            })
+            ->when($selectedAssigneeId > 0, fn (Builder $subtaskQuery) => $subtaskQuery->whereHas('assignees', fn (Builder $assigneesQuery) => $assigneesQuery->whereKey($selectedAssigneeId)))
+            ->when($selectedCompletion === 'completed', fn (Builder $subtaskQuery) => $subtaskQuery->whereHas('status', fn (Builder $statusQuery) => $statusQuery->where('slug', 'completada')))
+            ->when($selectedCompletion === 'incomplete', fn (Builder $subtaskQuery) => $subtaskQuery->whereHas('status', fn (Builder $statusQuery) => $statusQuery->where('slug', '!=', 'completada')))
+            ->when($selectedCreatedFrom !== '', fn (Builder $subtaskQuery) => $subtaskQuery->whereDate('created_at', '>=', $selectedCreatedFrom))
+            ->when($selectedCreatedTo !== '', fn (Builder $subtaskQuery) => $subtaskQuery->whereDate('created_at', '<=', $selectedCreatedTo));
+
+        return match ($selectedDueFilter) {
+            'overdue' => $query
+                ->whereNotNull('due_date')
+                ->whereDate('due_date', '<', today())
+                ->whereHas('status', fn (Builder $statusQuery) => $statusQuery->where('slug', '!=', 'completada')),
+            'today' => $query->whereDate('due_date', today()),
+            'tomorrow' => $query->whereDate('due_date', today()->copy()->addDay()),
+            'exact_date' => $query->when($selectedDueDate !== '', fn (Builder $subtaskQuery) => $subtaskQuery->whereDate('due_date', $selectedDueDate)),
+            'range' => $query
+                ->when($selectedDueFrom !== '', fn (Builder $subtaskQuery) => $subtaskQuery->whereDate('due_date', '>=', $selectedDueFrom))
+                ->when($selectedDueTo !== '', fn (Builder $subtaskQuery) => $subtaskQuery->whereDate('due_date', '<=', $selectedDueTo)),
+            default => $query,
+        };
+    }
+
+    protected function collectSubtaskBranchIds(Subtask $subtask): array
+    {
+        $ids = [$subtask->id];
+
+        foreach ($subtask->childSubtasksRecursive as $childSubtask) {
+            $ids = array_merge($ids, $this->collectSubtaskBranchIds($childSubtask));
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    protected function flattenTaskSubtaskOptions(Task $task): Collection
+    {
+        $options = collect();
+
+        foreach ($task->rootSubtasks as $subtask) {
+            $options->push([
+                'id' => $subtask->id,
+                'label' => $subtask->title,
+            ]);
+
+            $options = $options->merge($this->flattenNestedSubtaskOptions($subtask, 1));
+        }
+
+        return $options;
+    }
+
+    protected function flattenNestedSubtaskOptions(Subtask $subtask, int $level): Collection
+    {
+        $options = collect();
+
+        foreach ($subtask->childSubtasksRecursive as $childSubtask) {
+            $options->push([
+                'id' => $childSubtask->id,
+                'label' => str_repeat('— ', $level).$childSubtask->title,
+            ]);
+
+            $options = $options->merge($this->flattenNestedSubtaskOptions($childSubtask, $level + 1));
+        }
+
+        return $options;
+    }
+
+    protected function taskReportAssigneeOptions(Task $task): Collection
+    {
+        return User::query()
+            ->where('is_active', true)
+            ->where(function (Builder $userQuery) use ($task) {
+                $userQuery
+                    ->whereHas('assignedTasks', fn (Builder $taskQuery) => $taskQuery->whereKey($task->id))
+                    ->orWhereHas('assignedSubtasks', fn (Builder $subtaskQuery) => $subtaskQuery->where('task_id', $task->id));
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
     }
 
     protected function formData(array $extra = []): array

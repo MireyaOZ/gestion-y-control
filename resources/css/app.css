@@ -21,6 +21,14 @@
         @apply mt-1 w-full rounded-2xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#960018] focus:ring-[#960018];
     }
 
+    .app-file-input {
+        @apply mt-1 block w-full rounded-2xl border border-slate-300 bg-slate-50 px-3 py-3 text-sm text-slate-700 transition file:mr-4 file:rounded-xl file:border-0 file:bg-white file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-[#960018] file:shadow-sm hover:border-[#960018]/30 hover:bg-white hover:file:bg-[#fff1f3] focus:border-[#960018] focus:outline-none focus:ring-2 focus:ring-[#960018]/15;
+    }
+
+    .app-file-help {
+        @apply mt-2 text-xs text-slate-500;
+    }
+
     .app-label {
         @apply text-sm font-medium text-slate-700;
     }
@@ -248,4 +256,15 @@ trix-editor {
     border-color: rgb(150 0 24 / 0.2);
     color: rgb(150 0 24);
     background-color: rgb(255 255 255);
+}
+
+.app-modal .app-file-input {
+    background-color: rgb(248 250 252);
+    border-color: rgb(203 213 225);
+    color: rgb(51 65 85);
+}
+
+.app-modal .app-file-input::file-selector-button {
+    background-color: rgb(255 255 255);
+    color: rgb(150 0 24);
 }
