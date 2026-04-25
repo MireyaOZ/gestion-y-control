@@ -20,9 +20,16 @@ class UserController extends Controller
     {
         abort_unless($request->user()->can('users.view'), 403);
 
-        $users = User::query()->with('roles')->latest()->paginate(10);
+        $search = trim((string) $request->string('search'));
 
-        return view('admin.users.index', compact('users'));
+        $users = User::query()
+            ->with('roles')
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', "%{$search}%"))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.users.index', compact('users', 'search'));
     }
 
     public function create(Request $request): View

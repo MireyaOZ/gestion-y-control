@@ -18,7 +18,10 @@
                     </label>
                 @endforeach
             </div>
-            <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar</button>
+            <div class="flex items-center gap-3">
+                <button class="app-button" style="color: #ffffff !important;" type="submit">Guardar</button>
+                <a href="{{ route('admin.users.index') }}" class="app-button-secondary">Cancelar</a>
+            </div>
         </form>
     </div>
 </x-app-layout>

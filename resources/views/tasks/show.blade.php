@@ -127,7 +127,7 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h3 class="text-xl font-semibold text-slate-900">Generar reporte</h3>
-                            <p class="mt-1 text-sm text-slate-500">Elige si quieres exportar la tarea completa, una subtarea concreta o subtareas filtradas por usuario, estado y fechas.</p>
+                            <p class="mt-1 text-sm text-slate-500">Elige si quieres exportar la tarea completa, una subtarea concreta o subtareas filtradas por usuario, estado y vencimiento.</p>
                         </div>
                         <button type="button" class="text-slate-400 transition hover:text-slate-700" x-data @click="$dispatch('close-modal', 'task-report-options-{{ $task->id }}')">Cerrar</button>
                     </div>
@@ -155,7 +155,7 @@
                                         <input type="radio" name="scope" value="filtered_subtasks" x-model="scope" class="mt-0.5 text-[#960018] focus:ring-[#960018]">
                                         <span>
                                             <span class="block font-semibold text-slate-900">Subtareas filtradas</span>
-                                            <span class="mt-1 block text-xs text-slate-500">Permite filtrar por Pepito, completadas, incompletas, vencidas, hoy, mañana o rangos.</span>
+                                            <span class="mt-1 block text-xs text-slate-500">Permite filtrar por nombre, tareas completadas, tareas incompletas, tareas vencidas, fecha límite: hoy, entrega mañana.</span>
                                         </span>
                                     </label>
                                 </div>
@@ -228,19 +228,6 @@
                                     <option value="exact_date">Fecha exacta</option>
                                     <option value="range">Rango de fechas</option>
                                 </select>
-                            </div>
-
-                            <div x-show="usesSubtaskFilters()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">
-                                <div class="grid gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label for="task-report-created-from-{{ $task->id }}" class="app-label">Creada desde</label>
-                                        <input id="task-report-created-from-{{ $task->id }}" name="created_from" type="date" class="app-input" :disabled="!usesSubtaskFilters()">
-                                    </div>
-                                    <div>
-                                        <label for="task-report-created-to-{{ $task->id }}" class="app-label">Creada hasta</label>
-                                        <input id="task-report-created-to-{{ $task->id }}" name="created_to" type="date" class="app-input" :disabled="!usesSubtaskFilters()">
-                                    </div>
-                                </div>
                             </div>
 
                             <div x-show="usesSubtaskFilters() && usesDueDate()" x-transition class="rounded-3xl border border-slate-200 bg-slate-50 p-5 xl:col-span-3">

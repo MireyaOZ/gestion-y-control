@@ -15,6 +15,26 @@
             <a href="{{ route('admin.permissions.index') }}" class="app-button-secondary">Permisos</a>
         </div>
 
+        <form method="GET" class="app-card p-4">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center">
+                <div class="flex-1">
+                    <input
+                        name="search"
+                        value="{{ $search ?? '' }}"
+                        class="app-input mt-0"
+                        placeholder="Buscar por nombre de usuario..."
+                        oninput="if (this.value.trim() === '' && {{ ($search ?? '') !== '' ? 'true' : 'false' }}) { this.form.requestSubmit(); }"
+                    >
+                </div>
+                <div class="flex items-center gap-3 whitespace-nowrap">
+                    <button type="submit" class="app-button" style="color: #ffffff !important;">Buscar</button>
+                    @if (($search ?? '') !== '')
+                        <a href="{{ route('admin.users.index') }}" class="text-sm font-semibold text-slate-500 transition hover:text-slate-700">Limpiar</a>
+                    @endif
+                </div>
+            </div>
+        </form>
+
         <div class="app-card overflow-hidden">
             <table class="min-w-full text-sm">
                 <thead class="bg-white/5 text-left text-slate-400">
