@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\TaskStatus;
 use App\Models\User;
 use App\Services\ChangeLogger;
+use App\Support\ExcelXmlExporter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -136,25 +137,25 @@ class TaskController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('tasks.report-excel', compact(
-            'tasks',
-            'generatedAt',
-            'reportTitle',
-            'search',
-            'reportView',
-            'selectedCreatedDate',
-            'selectedDueDate',
-            'selectedStatus',
-            'selectedPriority',
-            'selectedCreator',
-            'trackingView',
-        ))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Reporte de tareas',
+            $this->buildTaskReportMetadata(
+                $generatedAt->format('d/m/Y'),
+                $reportView,
+                $selectedCreatedDate,
+                $selectedDueDate,
+                $selectedStatus?->name,
+                $selectedPriority?->name,
+                $selectedCreator?->name,
+                $trackingView,
+                $search,
+            ),
+            $reportView === 'table'
+                ? ['No.', 'Título', 'Autor', 'Descripción', 'Fecha de creación', 'Vencimiento', 'Avance', 'Estado', 'Prioridad', 'Asignados']
+                : ['No.', 'Título', 'Detalle'],
+            $this->buildTaskReportRows($tasks, $reportView),
+        );
     }
 
     public function hierarchyReport(Request $request, Task $task): Response
@@ -207,19 +208,25 @@ class TaskController extends Controller
             return $pdf->download($filenameBase.'.pdf');
         }
 
-        $content = view('tasks.hierarchy-report-excel', compact(
-            'task',
-            'generatedAt',
-            'reportTitle',
-            'reportView',
-            'hierarchyRows',
-        ))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Jerarquía de tarea',
+            [
+                ['Fecha de generación', $generatedAt->format('d/m/Y')],
+                ['Tarea', $task->title],
+                ['Vista seleccionada', $reportView === 'table' ? 'Tabla' : 'Lista'],
+                ['Creada', $task->created_at->format('d/m/Y')],
+                ['Creador', $task->creator?->name ?? 'Sin autor'],
+                ['Asignados', $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : 'Sin asignados'],
+                ['Estado', $task->status?->name ?? 'Sin estado'],
+                ['Subtareas', (string) $task->rootSubtasks->count()],
+                ['Avance general', $task->subtasks_progress_percentage.'%'],
+            ],
+            $reportView === 'table'
+                ? ['No.', 'Subtarea', 'Nivel', 'Fecha de creación', 'Vencimiento', 'Estado', 'Avance', 'Asignados']
+                : ['No.', 'Jerarquía', 'Detalle'],
+            $this->buildHierarchyReportRows($hierarchyRows, $reportView),
+        );
     }
 
     protected function downloadSpecificSubtaskHierarchyReport(Request $request, Task $task, string $format, string $reportView): Response
@@ -261,20 +268,20 @@ class TaskController extends Controller
             return $pdf->download($filenameBase.'.pdf');
         }
 
-        $content = view('tasks.subtask-hierarchy-report-excel', compact(
-            'task',
-            'subtask',
-            'generatedAt',
-            'reportTitle',
-            'reportView',
-            'hierarchyRows',
-        ))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Jerarquía de subtarea',
+            [
+                ['Fecha de generación', $generatedAt->format('d/m/Y')],
+                ['Tarea base', $task->title],
+                ['Subtarea seleccionada', $subtask->title],
+                ['Vista seleccionada', $reportView === 'table' ? 'Tabla' : 'Lista'],
+            ],
+            $reportView === 'table'
+                ? ['No.', 'Subtarea', 'Nivel', 'Fecha de creación', 'Vencimiento', 'Estado', 'Avance', 'Asignados']
+                : ['No.', 'Jerarquía', 'Detalle'],
+            $this->buildHierarchyReportRows($hierarchyRows, $reportView),
+        );
     }
 
     protected function downloadFilteredSubtasksReport(Request $request, Task $task, string $format, string $reportView): Response
@@ -320,27 +327,27 @@ class TaskController extends Controller
             return $pdf->download($filenameBase.'.pdf');
         }
 
-        $content = view('tasks.subtask-report-excel', compact(
-            'task',
-            'subtasks',
-            'generatedAt',
-            'reportTitle',
-            'reportView',
-            'selectedAssignee',
-            'selectedCompletion',
-            'selectedDueFilter',
-            'selectedCreatedFrom',
-            'selectedCreatedTo',
-            'selectedDueDate',
-            'selectedDueFrom',
-            'selectedDueTo',
-        ))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Reporte de subtareas',
+            $this->buildFilteredSubtasksMetadata(
+                $task->title,
+                $generatedAt->format('d/m/Y'),
+                $reportView,
+                $selectedAssignee?->name,
+                $selectedCompletion,
+                $selectedDueFilter,
+                $selectedCreatedFrom,
+                $selectedCreatedTo,
+                $selectedDueDate,
+                $selectedDueFrom,
+                $selectedDueTo,
+            ),
+            $reportView === 'table'
+                ? ['No.', 'Subtarea', 'Tarea', 'Subtarea padre', 'Autor', 'Fecha de creación', 'Vencimiento', 'Estado', 'Prioridad', 'Asignados']
+                : ['No.', 'Subtarea', 'Detalle'],
+            $this->buildFilteredSubtasksRows($subtasks, $reportView),
+        );
     }
 
     public function store(Request $request): RedirectResponse
@@ -600,6 +607,180 @@ class TaskController extends Controller
     protected function formatAssigneeList(array $assignees): string
     {
         return $assignees === [] ? 'Sin asignados' : implode(', ', $assignees);
+    }
+
+    protected function formatDateLabel(string $date): string
+    {
+        return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
+    }
+
+    protected function buildTaskReportMetadata(
+        string $generatedAt,
+        string $reportView,
+        string $selectedCreatedDate,
+        string $selectedDueDate,
+        ?string $selectedStatus,
+        ?string $selectedPriority,
+        ?string $selectedCreator,
+        string $trackingView,
+        string $search,
+    ): array {
+        $trackingLabel = match ($trackingView) {
+            'overdue' => 'TAREAS VENCIDAS',
+            'due-date' => 'TAREAS CON FECHA DE TÉRMINO',
+            'upcoming' => 'PRÓXIMAS TAREAS',
+            default => $trackingView,
+        };
+
+        return [
+            ['Fecha de generación', $generatedAt],
+            ['Vista seleccionada', $reportView === 'table' ? 'Tabla' : 'Lista'],
+            ['Fecha de creación', $selectedCreatedDate !== '' ? $this->formatDateLabel($selectedCreatedDate) : ''],
+            ['Fecha de vencimiento', $selectedDueDate !== '' ? $this->formatDateLabel($selectedDueDate) : ''],
+            ['Estatus', $selectedStatus],
+            ['Prioridad', $selectedPriority],
+            ['Creador', $selectedCreator],
+            ['Vista de seguimiento', $trackingView !== '' ? $trackingLabel : ''],
+            ['Búsqueda aplicada', $search],
+        ];
+    }
+
+    protected function buildTaskReportRows(Collection $tasks, string $reportView): array
+    {
+        return $tasks->values()->map(function (Task $task, int $index) use ($reportView): array {
+            $author = $task->creator?->name ?? 'Sin autor';
+            $description = $task->description ?: 'Sin descripción';
+            $createdAt = $task->created_at->format('d/m/Y');
+            $dueDate = optional($task->due_date)->format('d/m/Y') ?: 'Sin fecha';
+            $progress = $task->subtasks_progress_percentage.'%';
+            $status = $task->status?->name ?? 'Sin estado';
+            $priority = $task->priority?->name ?? 'Sin prioridad';
+            $assignees = $task->assignees->isNotEmpty() ? $task->assignees->pluck('name')->join(', ') : 'Sin asignados';
+
+            if ($reportView === 'table') {
+                return [$index + 1, $task->title, $author, $description, $createdAt, $dueDate, $progress, $status, $priority, $assignees];
+            }
+
+            return [
+                $index + 1,
+                $task->title,
+                'Autor: '.$author."\n"
+                    .'Descripción: '.$description."\n"
+                    .'Fecha de creación: '.$createdAt."\n"
+                    .'Vencimiento: '.$dueDate."\n"
+                    .'Avance: '.$progress."\n"
+                    .'Estado: '.$status."\n"
+                    .'Prioridad: '.$priority."\n"
+                    .'Asignados: '.$assignees,
+            ];
+        })->all();
+    }
+
+    protected function buildHierarchyReportRows(Collection $hierarchyRows, string $reportView): array
+    {
+        return $hierarchyRows->values()->map(function (array $row, int $index) use ($reportView): array {
+            if ($reportView === 'table') {
+                return [
+                    $index + 1,
+                    str_repeat('— ', $row['level']).$row['title'],
+                    $row['level'] + 1,
+                    $row['created_at'],
+                    $row['due_date'],
+                    $row['status'],
+                    $row['progress'],
+                    $row['assignees'],
+                ];
+            }
+
+            return [
+                $index + 1,
+                str_repeat('→ ', $row['level']).'Nivel '.($row['level'] + 1),
+                $row['title']."\n"
+                    .'Fecha de creación: '.$row['created_at']."\n"
+                    .'Vencimiento: '.$row['due_date']."\n"
+                    .'Estado: '.$row['status']."\n"
+                    .'Avance: '.$row['progress']."\n"
+                    .'Asignados: '.$row['assignees'],
+            ];
+        })->all();
+    }
+
+    protected function buildFilteredSubtasksMetadata(
+        string $taskTitle,
+        string $generatedAt,
+        string $reportView,
+        ?string $selectedAssignee,
+        string $selectedCompletion,
+        string $selectedDueFilter,
+        string $selectedCreatedFrom,
+        string $selectedCreatedTo,
+        string $selectedDueDate,
+        string $selectedDueFrom,
+        string $selectedDueTo,
+    ): array {
+        $completionLabel = match ($selectedCompletion) {
+            'completed' => 'Completadas',
+            'incomplete' => 'Incompletas',
+            default => '',
+        };
+
+        $dueFilterLabel = match ($selectedDueFilter) {
+            'overdue' => 'Vencidas',
+            'today' => 'Vencen hoy',
+            'tomorrow' => 'Vencen mañana',
+            'exact_date' => $selectedDueDate !== '' ? $this->formatDateLabel($selectedDueDate) : '',
+            'range' => ($selectedDueFrom !== '' || $selectedDueTo !== '')
+                ? ($selectedDueFrom !== '' ? $this->formatDateLabel($selectedDueFrom) : 'Sin límite')
+                    .' a '
+                    .($selectedDueTo !== '' ? $this->formatDateLabel($selectedDueTo) : 'Sin límite')
+                : '',
+            default => '',
+        };
+
+        return [
+            ['Tarea base', $taskTitle],
+            ['Fecha de generación', $generatedAt],
+            ['Vista seleccionada', $reportView === 'table' ? 'Tabla' : 'Lista'],
+            ['Usuario asignado', $selectedAssignee],
+            ['Estado de entrega', $completionLabel],
+            ['Creación', ($selectedCreatedFrom !== '' || $selectedCreatedTo !== '')
+                ? ($selectedCreatedFrom !== '' ? $this->formatDateLabel($selectedCreatedFrom) : 'Sin límite')
+                    .' a '
+                    .($selectedCreatedTo !== '' ? $this->formatDateLabel($selectedCreatedTo) : 'Sin límite')
+                : ''],
+            ['Vencimiento', $dueFilterLabel],
+        ];
+    }
+
+    protected function buildFilteredSubtasksRows(Collection $subtasks, string $reportView): array
+    {
+        return $subtasks->values()->map(function (Subtask $subtask, int $index) use ($reportView): array {
+            $task = $subtask->task?->title ?? 'Sin tarea';
+            $parent = $subtask->parentSubtask?->title ?? 'Raíz';
+            $author = $subtask->creator?->name ?? 'Sin autor';
+            $createdAt = $subtask->created_at->format('d/m/Y');
+            $dueDate = optional($subtask->due_date)->format('d/m/Y') ?: 'Sin fecha';
+            $status = $subtask->status?->name ?? 'Sin estado';
+            $priority = $subtask->priority?->name ?? 'Sin prioridad';
+            $assignees = $subtask->assignees->isNotEmpty() ? $subtask->assignees->pluck('name')->join(', ') : 'Sin asignados';
+
+            if ($reportView === 'table') {
+                return [$index + 1, $subtask->title, $task, $parent, $author, $createdAt, $dueDate, $status, $priority, $assignees];
+            }
+
+            return [
+                $index + 1,
+                $subtask->title,
+                'Tarea: '.$task."\n"
+                    .'Subtarea padre: '.$parent."\n"
+                    .'Autor: '.$author."\n"
+                    .'Fecha de creación: '.$createdAt."\n"
+                    .'Vencimiento: '.$dueDate."\n"
+                    .'Estado: '.$status."\n"
+                    .'Prioridad: '.$priority."\n"
+                    .'Asignados: '.$assignees,
+            ];
+        })->all();
     }
 
     protected function flattenHierarchyRows(Task $task): Collection

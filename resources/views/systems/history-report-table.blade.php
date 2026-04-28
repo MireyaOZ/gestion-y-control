@@ -25,7 +25,7 @@
                 <td>{{ $log->localized_action }}</td>
                 <td>{{ optional($log->author)->name ?? 'Sistema' }}</td>
                 <td>{{ $log->status_group }}</td>
-                <td>{!! $reportContent !!}</td>
+                <td class="detail-cell">{!! $reportContent !!}</td>
             </tr>
         @empty
             <tr>

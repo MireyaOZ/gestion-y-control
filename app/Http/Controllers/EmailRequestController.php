@@ -6,6 +6,7 @@ use App\Models\EmailCargo;
 use App\Models\EmailMovementType;
 use App\Models\EmailRequest;
 use App\Services\ChangeLogger;
+use App\Support\ExcelXmlExporter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
@@ -79,13 +80,27 @@ class EmailRequestController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('emails.report-excel', compact('emailRequests', 'generatedAt', 'reportTitle', 'areaLabel', 'parentAreaLabel', 'movementTypeLabel', 'selectedArea', 'selectedMovementType', 'selectedStatus', 'statusLabel', 'selectedDateFrom', 'selectedDateTo', 'dateLabel', 'selectedRequestDate', 'requestDateLabel', 'selectedRequestYear', 'requestYearLabel', 'search'))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Reporte de correos',
+            $this->buildEmailReportMetadata(
+                $generatedAt->format('d/m/Y'),
+                $selectedArea,
+                $areaLabel,
+                $parentAreaLabel,
+                $selectedMovementType,
+                $movementTypeLabel,
+                $selectedStatus,
+                $statusLabel,
+                $selectedRequestDate,
+                $selectedRequestYear,
+                $selectedDateFrom,
+                $selectedDateTo,
+                $search,
+            ),
+            ['No.', 'Fecha de solicitud', 'Nombre', 'Correo', 'Cargo', 'Superior jerárquico', 'Tipo de movimiento', 'Estatus', 'Fecha de creación'],
+            $this->buildEmailReportRows($emailRequests),
+        );
     }
 
     public function historyReport(Request $request, EmailRequest $emailRequest, string $format): Response
@@ -107,13 +122,19 @@ class EmailRequestController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('emails.history-report-excel', compact('emailRequest', 'generatedAt', 'reportTitle'))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Historial de correo',
+            [
+                ['Fecha de generación', $generatedAt->format('d/m/Y')],
+                ['Fecha de solicitud', $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha'],
+                ['Nombre', $emailRequest->name],
+                ['Correo', $emailRequest->email],
+                ['Cargo', $emailRequest->cargo?->name ?? 'Sin cargo'],
+            ],
+            ['No.', 'Fecha de movimiento', 'Acción', 'Autor', 'Detalle'],
+            $this->buildEmailHistoryRows($emailRequest),
+        );
     }
 
     public function store(Request $request): RedirectResponse
@@ -290,6 +311,64 @@ class EmailRequestController extends Controller
         }
 
         return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
+    }
+
+    protected function buildEmailReportMetadata(
+        string $generatedAt,
+        ?EmailCargo $selectedArea,
+        string $areaLabel,
+        string $parentAreaLabel,
+        ?EmailMovementType $selectedMovementType,
+        string $movementTypeLabel,
+        ?string $selectedStatus,
+        string $statusLabel,
+        string $selectedRequestDate,
+        string $selectedRequestYear,
+        string $selectedDateFrom,
+        string $selectedDateTo,
+        string $search,
+    ): array {
+        return [
+            ['Fecha de generación', $generatedAt],
+            ['Área filtrada', $selectedArea ? $areaLabel : ''],
+            ['Área superior', $selectedArea ? $parentAreaLabel : ''],
+            ['Tipo de movimiento', $selectedMovementType ? $movementTypeLabel : ''],
+            ['Estatus filtrado', $selectedStatus ? $statusLabel : ''],
+            ['Fecha de solicitud filtrada', $selectedRequestDate !== '' ? $this->formatRequestDate($selectedRequestDate) : ''],
+            ['Año de solicitud filtrado', $selectedRequestYear],
+            ['Fecha filtrada', ($selectedDateFrom !== '' || $selectedDateTo !== '')
+                ? ($selectedDateFrom !== '' ? $this->formatDateLabel($selectedDateFrom) : 'Sin inicio')
+                    .' - '
+                    .($selectedDateTo !== '' ? $this->formatDateLabel($selectedDateTo) : 'Sin fin')
+                : ''],
+            ['Búsqueda aplicada', $search],
+        ];
+    }
+
+    protected function buildEmailReportRows(Collection $emailRequests): array
+    {
+        return $emailRequests->values()->map(fn (EmailRequest $emailRequest, int $index): array => [
+            $index + 1,
+            $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha',
+            $emailRequest->name,
+            $emailRequest->email,
+            $emailRequest->cargo?->name ?? 'Sin cargo',
+            $emailRequest->cargo?->parent_name ?? 'Sin superior',
+            $emailRequest->movementType->name,
+            $emailRequest->operational_status,
+            $emailRequest->created_at->format('d/m/Y'),
+        ])->all();
+    }
+
+    protected function buildEmailHistoryRows(EmailRequest $emailRequest): array
+    {
+        return $emailRequest->changeLogs->values()->map(fn ($log, int $index): array => [
+            $index + 1,
+            $log->created_at->format('d/m/Y'),
+            $log->localized_action,
+            optional($log->author)->name ?? 'Sistema',
+            ExcelXmlExporter::plainText($log->report_content),
+        ])->all();
     }
 
     protected function emailsFilterContext(Request $request): array

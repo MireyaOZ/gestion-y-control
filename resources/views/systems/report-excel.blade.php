@@ -17,7 +17,7 @@
     <h1>{{ $reportTitle }}</h1>
 
     <div class="meta">
-        <p><strong>Fecha de generación:</strong> {{ $generatedAt->format('d/m/Y') }}</p>
+        <p><strong>Fecha de generación</strong>: {{ $generatedAt->format('d/m/Y') }}</p>
         @if ($search !== '')
             <p><strong>Búsqueda aplicada:</strong> {{ $search }}</p>
         @endif

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\ChangeLogger;
+use App\Support\ExcelXmlExporter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\SystemRecord;
@@ -12,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 
 class SystemRecordController extends Controller
 {
@@ -83,22 +85,20 @@ class SystemRecordController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('systems.report-excel', compact(
-            'systems',
-            'generatedAt',
-            'reportTitle',
-            'search',
-            'selectedRequestDate',
-            'selectedRequestYear',
-            'selectedDateFrom',
-            'selectedDateTo',
-        ))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Reporte de sistemas',
+            $this->buildSystemReportMetadata(
+                $generatedAt->format('d/m/Y'),
+                $search,
+                $selectedRequestDate,
+                $selectedRequestYear,
+                $selectedDateFrom,
+                $selectedDateTo,
+            ),
+            ['No.', 'Nombre del sistema', 'Fecha de solicitud', 'Fecha de creación', 'Estatus'],
+            $this->buildSystemReportRows($systems),
+        );
     }
 
     public function historyReport(Request $request, SystemRecord $system, string $format): Response
@@ -120,13 +120,18 @@ class SystemRecordController extends Controller
 
         abort_unless($format === 'excel', 404);
 
-        $content = view('systems.history-report-excel', compact('system', 'generatedAt', 'reportTitle'))->render();
-
-        return response($content, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filenameBase.'.xls"',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return ExcelXmlExporter::download(
+            $filenameBase,
+            'Historial de sistema',
+            [
+                ['Fecha de generación:', $generatedAt->format('d/m/Y')],
+                ['Fecha de solicitud:', $system->request_date?->format('d/m/Y') ?? 'Sin fecha'],
+                ['Nombre del sistema:', $system->name],
+                ['Estatus actual:', $system->status?->display_name ?? 'Sin estatus'],
+            ],
+            ['No.', 'Fecha', 'Acción', 'Autor', 'Estatus', 'Detalle'],
+            $this->buildSystemHistoryRows($system),
+        );
     }
 
     public function store(Request $request): RedirectResponse
@@ -163,6 +168,101 @@ class SystemRecordController extends Controller
         return redirect()->route('systems.index')->with('status', 'Sistema creado correctamente.');
     }
 
+
+        protected function buildSystemReportMetadata(
+            string $generatedAt,
+            string $search,
+            string $selectedRequestDate,
+            string $selectedRequestYear,
+            string $selectedDateFrom,
+            string $selectedDateTo,
+        ): array {
+            return [
+                ['Fecha de generación', $generatedAt],
+                ['Búsqueda aplicada', $search],
+                ['Fecha de solicitud', $selectedRequestDate !== '' ? $this->formatDateLabel($selectedRequestDate) : ''],
+                ['Año de solicitud', $selectedRequestYear],
+                ['Fecha de creación', ($selectedDateFrom !== '' || $selectedDateTo !== '')
+                    ? ($selectedDateFrom !== '' ? $this->formatDateLabel($selectedDateFrom) : 'Sin inicio')
+                        .' - '
+                        .($selectedDateTo !== '' ? $this->formatDateLabel($selectedDateTo) : 'Sin fin')
+                    : ''],
+            ];
+        }
+
+        protected function buildSystemReportRows(Collection $systems): array
+        {
+            return $systems->values()->map(fn (SystemRecord $system, int $index): array => [
+                $index + 1,
+                $system->name,
+                $system->request_date?->format('d/m/Y') ?? 'Sin fecha',
+                $system->created_at->format('d/m/Y'),
+                $this->buildSystemStatusCell($system),
+            ])->all();
+        }
+
+        protected function buildSystemHistoryRows(SystemRecord $system): array
+        {
+            return $system->changeLogs->values()->map(function ($log, int $index): array {
+                $reportContent = preg_replace(
+                    '/<p>Sistema (?:actualizado|registrado|eliminado) por .*?<\/p>/is',
+                    '',
+                    $log->rendered_content,
+                    1,
+                ) ?? $log->rendered_content;
+
+                return [
+                    $index + 1,
+                    $log->created_at->format('d/m/Y'),
+                    $log->localized_action,
+                    optional($log->author)->name ?? 'Sistema',
+                    $log->status_group,
+                    $this->formatSystemHistoryDetailForExcel($reportContent),
+                ];
+            })->all();
+        }
+
+        protected function formatSystemHistoryDetailForExcel(string $content): string
+        {
+            $contentWithLinks = preg_replace_callback(
+                '/<a\s+[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/isu',
+                static function (array $matches): string {
+                    $url = html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $label = trim(strip_tags(html_entity_decode($matches[2], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+
+                    if ($label === '') {
+                        return $url;
+                    }
+
+                    return e($label.': '.$url);
+                },
+                $content,
+            ) ?? $content;
+
+            $contentWithoutDuplicatedUrls = preg_replace(
+                '/\s*<span[^>]*>\((?:https?:\/\/|www\.)[^<]+\)<\/span>/iu',
+                '',
+                $contentWithLinks,
+            ) ?? $contentWithLinks;
+
+            return ExcelXmlExporter::plainText($contentWithoutDuplicatedUrls);
+        }
+
+        protected function buildSystemStatusCell(SystemRecord $system): string
+        {
+            $status = $system->status?->display_name ?? 'Sin estatus';
+
+            if (! $system->status?->isTesting()) {
+                return $status;
+            }
+
+            return $status."\n"
+                .'Tarjetas errores pendientes: '.($system->pending_errors ?? 0)."\n"
+                .'Tarjetas errores en proceso de solución: '.($system->errors_in_progress ?? 0)."\n"
+                .'Tarjetas en revisión: '.($system->in_review ?? 0)."\n"
+                .'Tarjetas finalizadas: '.($system->finalized ?? 0)."\n"
+                .'Total de tarjetas en trello: '.$system->total_trello_cards;
+        }
     public function update(Request $request, SystemRecord $system): RedirectResponse
     {
         abort_unless($request->user()->can('systems.update'), 403);
@@ -504,6 +604,11 @@ class SystemRecordController extends Controller
             return 'Sin fecha';
         }
 
+        return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
+    }
+
+    protected function formatDateLabel(string $date): string
+    {
         return \Illuminate\Support\Carbon::parse($date)->format('d/m/Y');
     }
 
