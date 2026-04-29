@@ -15,7 +15,7 @@
                 <td>{{ $log->created_at->format('d/m/Y') }}</td>
                 <td>{{ $log->localized_action }}</td>
                 <td>{{ optional($log->author)->name ?? 'Sistema' }}</td>
-                <td>{!! $log->report_content !!}</td>
+                <td class="detail-cell">{!! $log->report_content !!}</td>
             </tr>
         @empty
             <tr>

@@ -12,6 +12,8 @@
         th, td { border: 1px solid #cbd5e1; padding: 8px; vertical-align: top; }
         th { background: #f8fafc; text-align: left; color: #475569; }
         a { color: #960018; text-decoration: none; }
+        .detail-cell, .detail-cell * { overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+        .detail-cell a { word-break: break-all; }
     </style>
 </head>
 <body>

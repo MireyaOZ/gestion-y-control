@@ -178,11 +178,11 @@ class SystemRecordController extends Controller
             string $selectedDateTo,
         ): array {
             return [
-                ['Fecha de generación', $generatedAt],
-                ['Búsqueda aplicada', $search],
-                ['Fecha de solicitud', $selectedRequestDate !== '' ? $this->formatDateLabel($selectedRequestDate) : ''],
-                ['Año de solicitud', $selectedRequestYear],
-                ['Fecha de creación', ($selectedDateFrom !== '' || $selectedDateTo !== '')
+                ['Fecha de generación:', $generatedAt],
+                ['Búsqueda aplicada:', $search],
+                ['Fecha de solicitud:', $selectedRequestDate !== '' ? $this->formatDateLabel($selectedRequestDate) : ''],
+                ['Año de solicitud:', $selectedRequestYear],
+                ['Fecha de creación:', ($selectedDateFrom !== '' || $selectedDateTo !== '')
                     ? ($selectedDateFrom !== '' ? $this->formatDateLabel($selectedDateFrom) : 'Sin inicio')
                         .' - '
                         .($selectedDateTo !== '' ? $this->formatDateLabel($selectedDateTo) : 'Sin fin')

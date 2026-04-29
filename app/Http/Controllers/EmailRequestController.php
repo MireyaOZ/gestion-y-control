@@ -126,11 +126,11 @@ class EmailRequestController extends Controller
             $filenameBase,
             'Historial de correo',
             [
-                ['Fecha de generación', $generatedAt->format('d/m/Y')],
-                ['Fecha de solicitud', $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha'],
-                ['Nombre', $emailRequest->name],
-                ['Correo', $emailRequest->email],
-                ['Cargo', $emailRequest->cargo?->name ?? 'Sin cargo'],
+                ['Fecha de generación:', $generatedAt->format('d/m/Y')],
+                ['Fecha de solicitud:', $emailRequest->request_date?->format('d/m/Y') ?? 'Sin fecha'],
+                ['Nombre:', $emailRequest->name],
+                ['Correo:', $emailRequest->email],
+                ['Cargo:', $emailRequest->cargo?->name ?? 'Sin cargo'],
             ],
             ['No.', 'Fecha de movimiento', 'Acción', 'Autor', 'Detalle'],
             $this->buildEmailHistoryRows($emailRequest),
@@ -329,19 +329,19 @@ class EmailRequestController extends Controller
         string $search,
     ): array {
         return [
-            ['Fecha de generación', $generatedAt],
-            ['Área filtrada', $selectedArea ? $areaLabel : ''],
-            ['Área superior', $selectedArea ? $parentAreaLabel : ''],
-            ['Tipo de movimiento', $selectedMovementType ? $movementTypeLabel : ''],
-            ['Estatus filtrado', $selectedStatus ? $statusLabel : ''],
-            ['Fecha de solicitud filtrada', $selectedRequestDate !== '' ? $this->formatRequestDate($selectedRequestDate) : ''],
-            ['Año de solicitud filtrado', $selectedRequestYear],
-            ['Fecha filtrada', ($selectedDateFrom !== '' || $selectedDateTo !== '')
+            ['Fecha de generación:', $generatedAt],
+            ['Área filtrada:', $selectedArea ? $areaLabel : ''],
+            ['Área superior:', $selectedArea ? $parentAreaLabel : ''],
+            ['Tipo de movimiento:', $selectedMovementType ? $movementTypeLabel : ''],
+            ['Estatus filtrado:', $selectedStatus ? $statusLabel : ''],
+            ['Fecha de solicitud filtrada:', $selectedRequestDate !== '' ? $this->formatRequestDate($selectedRequestDate) : ''],
+            ['Año de solicitud filtrado:', $selectedRequestYear],
+            ['Fecha filtrada:', ($selectedDateFrom !== '' || $selectedDateTo !== '')
                 ? ($selectedDateFrom !== '' ? $this->formatDateLabel($selectedDateFrom) : 'Sin inicio')
                     .' - '
                     .($selectedDateTo !== '' ? $this->formatDateLabel($selectedDateTo) : 'Sin fin')
                 : ''],
-            ['Búsqueda aplicada', $search],
+            ['Búsqueda aplicada:', $search],
         ];
     }
 

@@ -192,6 +192,18 @@ class ExcelXmlExporter
             return min(max($maxLineLength + 2, 20), 28);
         }
 
+        if ($normalizedHeader === 'nombre del sistema') {
+            return min(max($maxLineLength + 4, 26), 34);
+        }
+
+        if (in_array($normalizedHeader, ['fecha de solicitud', 'fecha de creación', 'fecha'], true)) {
+            return 18;
+        }
+
+        if ($normalizedHeader === 'estatus') {
+            return min(max((int) ceil($maxLineLength * 0.7), 28), 42);
+        }
+
         if ($columnIndex === 1 && str_contains($normalizedHeader, 'fecha')) {
             return min(max($maxLineLength + 2, 18), 26);
         }
